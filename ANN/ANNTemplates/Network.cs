@@ -25,6 +25,9 @@ namespace ANN.ANNTemplates
             }
         }
 
+        public bool Run() { return false; }
+        public bool Train() { return false; }
+
         public void InitializeStd(int nodes, Delegate activation, Delegate gradient)
         {
             for (int i = 1; i < this.Count - 1; i++)
@@ -48,7 +51,7 @@ namespace ANN.ANNTemplates
             {
                 layer.StandardConnectNeurons();
             }
-        }
+         }
 
         public void InitializeLayer(int index, int nodes, Delegate activation, Delegate gradient)
         {

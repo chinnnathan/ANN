@@ -48,5 +48,16 @@ namespace ANN.ANNTemplates
             PriorNeurons = new List<Neuron>();
             AfterNeurons = new List<Neuron>();
         }
+
+        public object RunActivation(params object[] args)
+        {
+            return _activation.DynamicInvoke(args);
+        }
+
+        public object RunGradient(params object[] args)
+        {
+            return _gradient.DynamicInvoke(args);
+        }
+
     }
 }

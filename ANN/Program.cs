@@ -69,11 +69,26 @@ namespace ANN
             int nodes = 7;
             Del _activation = ActivationFunctions.Tanh;
             Del _gradient = GradientFunctions.Tanh;
+            bool networkDefined = false;
 
             if (NetworkType.ToLower() == "backpropagation")
             {
+                networkDefined = true;
                 _network = new Backpropagation(nodes, _hiddenLayers);
                 _network.InitializeStd(nodes, _activation, _gradient);
+            }
+
+            if(networkDefined)
+            {
+                bool nw = _network.Run();
+                if(nw)
+                {
+                    Console.WriteLine("Network: {0} Ran Succesfully", NetworkType);
+                }
+                else
+                {
+                    Console.WriteLine("Network: {0} Failed", NetworkType);
+                }
             }
         }
     }

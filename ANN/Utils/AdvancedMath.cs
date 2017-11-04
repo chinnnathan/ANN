@@ -53,11 +53,28 @@ namespace ANN.Utils
             }
             else
             {
-                Console.WriteLine("\n Number of columns in First Matrix should be equal to Number of rows in Second Matrix.");
-                Console.WriteLine("\n Please re-enter correct dimensions.");
+                Console.WriteLine("Incorrect Parameters: C(m,n) = A(m,k) * B(k,n)");
+                Console.WriteLine("\tGiven: C(m,n) = A({0},{1}) * B({2},{3})", a.Length, a.GetLength(0), b.Length, b.GetLength(0));
                 Environment.Exit(-1);
             }
             return c;
+        }
+
+        public static double[,] ConvertToMatrix(double[] A, int L, int W)
+        {
+            if (L == -1)
+                L = A.Length; //Vertical Matrix
+            if (W == -1)
+                W = A.Length; //Horizontal Matrix
+            double[,] B = new double[L,W];
+            Parallel.For(0, L, y =>
+            {
+                Parallel.For(0, W, x =>
+                {
+                    B[y, x] = A[(y * W) + x];
+                });
+            });
+            return B;
         }
     }
 }
