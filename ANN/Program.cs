@@ -12,7 +12,7 @@ namespace ANN
 {
     class Program
     {
-        private string _networkType = "Backpropogation";
+        private string _networkType = "Backpropagation";
         private string _trainingFile = "D:/Science/ANN/LetterTrainingHW1.dat";
         private string _testingFile = "D:/Science/ANN/LetterTestingHW1.dat";
         private string _validationFile = "D:/Science/ANN/Validation.csv";
@@ -20,6 +20,8 @@ namespace ANN
         private string _outputTrainingFile = "TrainingOutput.csv";
         private double _learningRate = 0.005;
         private int    _hiddenLayers = 1;
+        private dynamic _network; //have to abstract for multiple networks 
+        private delegate double Del(double input);
 
         public string NetworkType { get { return _networkType; } set { _networkType=value; } }
         public string TestingFile { get { return _testingFile; } set { _testingFile=value; } }
@@ -49,15 +51,29 @@ namespace ANN
         public void RunProgram(string[] args)
         {
             SetVariables(args);
+            InterpretVariables();
         }
 
-        public void SetVariables(string[] args)
+        private void SetVariables(string[] args)
         {
             for (int i=0; i<args.Length; i+=2)
             {
                 string var = args[i].Trim('-');
                 string value = args[i + 1];
                 this.SetValueByString(var, value);
+            }
+        }
+
+        private void InterpretVariables()
+        {
+            int nodes = 7;
+            Del _activation = ActivationFunctions.Tanh;
+            Del _gradient = GradientFunctions.Tanh;
+
+            if (NetworkType.ToLower() == "backpropagation")
+            {
+                _network = new Backpropagation(nodes, _hiddenLayers);
+                _network.InitializeStd(nodes, _activation, _gradient);
             }
         }
     }

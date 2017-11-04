@@ -15,14 +15,17 @@ namespace ANN.ANNTemplates
         private List<NeuronInterconnect> _output = new List<NeuronInterconnect>();
         private List<NeuronInterconnect> _input = new List<NeuronInterconnect>();
         private List<double> _weights;
-        private Func<double, double> _activation;
-        private Func<double, double> _gradient;
+        //private Func<double, double> _activation;
+        //private Func<double, double> _gradient;
+        private Delegate _activation;
+        private Delegate _gradient;
 
         //interconnects for neuron
         public List<NeuronInterconnect> InterOut { get { return _output; } set { _output = value; } }
         public List<NeuronInterconnect> InterIn { get { return _input; } set { _input = value; } }
 
         //neuron values for output files
+        public string Name { get; set; }
         public double Input { get; set; }
         public double Prediction { get { return _prediction; } set { _prediction = value; } }
         public double BpropValue { get { return _bpropValue; } set { _bpropValue = value; } }
@@ -37,7 +40,8 @@ namespace ANN.ANNTemplates
             AfterNeurons = new List<Neuron>();
         }
 
-        public Neuron(Func<double, double> activation, Func<double, double> gradient)
+        //public Neuron(Func<double, double> activation, Func<double, double> gradient)
+        public Neuron(Delegate activation, Delegate gradient)
         {
             _activation = activation;
             _gradient = gradient; 

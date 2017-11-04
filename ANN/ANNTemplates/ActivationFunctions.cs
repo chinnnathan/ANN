@@ -8,6 +8,9 @@ namespace ANN.ANNTemplates
 {
     class ActivationFunctions
     {
+        public delegate double Del(double input);
+        public delegate double Del1(double input, double[] other);
+
         public static double Tanh(double input)
         {
             if (input < -20.0) return -1.0F; // approximation is correct to 30 decimals

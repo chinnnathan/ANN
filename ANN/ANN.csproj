@@ -67,6 +67,7 @@
     <Compile Include="Networks\Backpropagation.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utils\AdvancedMath.cs" />
     <Compile Include="Utils\OperationCLI.cs" />
   </ItemGroup>
   <ItemGroup>
