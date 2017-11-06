@@ -60,6 +60,39 @@ namespace ANN.Utils
             return c;
         }
 
+        public static double[][] JMultiplyMatrix(double[,] a, double[,] b)
+        {
+            double[][] c = new double[a.GetLength(0)][];
+            if (a.GetLength(1) == b.GetLength(0))
+            {
+                for (int i = 0; i < c.GetLength(0); i++)
+                {
+                    c[i] = new double[b.GetLength(1)];
+                    for (int j = 0; j < c[i].Length; j++)
+                    {
+                        c[i][j] = 0;
+                        for (int k = 0; k < a.GetLength(1); k++) // OR k<b.GetLength(0)
+                            c[i][j] = c[i][j] + a[i, k] * b[k, j];
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("Incorrect Parameters: C(m,n) = A(m,k) * B(k,n)");
+                Console.WriteLine("\tGiven: C(m,n) = A({0},{1}) * B({2},{3})", a.Length, a.GetLength(0), b.Length, b.GetLength(0));
+                Environment.Exit(-1);
+            }
+            return c;
+        }
+
+        private static readonly Random random = new Random();
+        public static double GetRandomRange(double min, double max)
+        {
+            var next = random.NextDouble();
+            return min + (next * (max - min));
+
+        }
+
         public static double[,] ConvertToMatrix(double[] A, int L, int W)
         {
             if (L == -1)

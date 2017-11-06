@@ -12,14 +12,15 @@ namespace ANN
 {
     class Program
     {
-        private string _networkType = "Backpropagation";
-        private string _trainingFile = "D:/Science/ANN/LetterTrainingHW1.dat";
-        private string _testingFile = "D:/Science/ANN/LetterTestingHW1.dat";
-        private string _validationFile = "D:/Science/ANN/Validation.csv";
-        private string _outputTestingFile = "TestingOutput.csv";
-        private string _outputTrainingFile = "TrainingOutput.csv";
-        private double _learningRate = 0.005;
-        private int    _hiddenLayers = 1;
+        private string  _networkType = "Backpropagation";
+        private string  _trainingFile = "D:/Science/ANN/LetterTrainingHW1.dat";
+        private string  _testingFile = "D:/Science/ANN/LetterTestingHW1.dat";
+        private string  _validationFile = "D:/Science/ANN/Validation.csv";
+        private string  _outputTestingFile = "TestingOutput.csv";
+        private string  _outputTrainingFile = "TrainingOutput.csv";
+        private double  _learningRate = 0.005;
+        private int     _hiddenLayers = 1;
+        private int     _classes = 7;
         private dynamic _network; //have to abstract for multiple networks 
         private delegate double Del(double input);
 
@@ -30,7 +31,8 @@ namespace ANN
         public string OutputTestingFile { get { return _outputTestingFile; } set { _outputTestingFile=value; } }
         public string OutputTrainingFile { get { return _outputTrainingFile; } set { _outputTrainingFile=value; } }
         public double LearningRate { get { return _learningRate; } set { _learningRate=value; } }
-        public int HiddenLayers { get { return _hiddenLayers; } set { _hiddenLayers=value; } }
+        public int HiddenLayers { get { return _hiddenLayers; } set { _hiddenLayers = value; } }
+        public int Clasees { get { return _classes; } set { _classes = value; } }
 
         static void Main(string[] args)
         {
@@ -75,10 +77,14 @@ namespace ANN
             {
                 networkDefined = true;
                 _network = new Backpropagation(nodes, _hiddenLayers);
-                _network.InitializeStd(nodes, _activation, _gradient);
             }
 
-            if(networkDefined)
+            _network.Classes = _classes;
+            _network.SetInputs(_trainingFile, 9);
+
+            _network.InitializeStd(nodes, _activation, _gradient);
+
+            if (networkDefined)
             {
                 bool nw = _network.Run();
                 if(nw)

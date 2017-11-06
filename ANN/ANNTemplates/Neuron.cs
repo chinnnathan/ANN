@@ -26,7 +26,7 @@ namespace ANN.ANNTemplates
 
         //neuron values for output files
         public string Name { get; set; }
-        public double Input { get; set; }
+        public double[] Input { get; set; }
         public double Prediction { get { return _prediction; } set { _prediction = value; } }
         public double BpropValue { get { return _bpropValue; } set { _bpropValue = value; } }
         public int Momentum { get { return _momentum; } set { _momentum = value; } }

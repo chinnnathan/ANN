@@ -42,10 +42,19 @@ namespace ANN.Networks
 
         new public bool Run()
         {
-            foreach(var layer in this)
+            foreach (var input in Inputs)
             {
-                layer.FeedForward();
+                foreach(var neuron in this[0])
+                {
+                    neuron.Input = Inputs[0].ToArray();
+                }
+
+                foreach (var layer in this)
+                {
+                    layer.FeedForward();
+                }
             }
+
             return true;
         }
 
