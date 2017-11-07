@@ -49,5 +49,11 @@ namespace ANN.ANNTemplates
             }
             return retval;
         }
+
+        //need a placeholder activation function for input
+        public static double Input(double input)
+        {
+            return input;
+        }
     }
 }

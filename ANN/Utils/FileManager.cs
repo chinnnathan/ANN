@@ -94,7 +94,7 @@ namespace ANN.Utils
             }
             catch
             {
-                 value += string.Format("{0},", obj);
+                 value += string.Format("{0}", obj);
             }
                 
             return value;
@@ -108,7 +108,7 @@ namespace ANN.Utils
                 try
                 {
                     dynamic val = des.GetValue(obj);
-                    values += string.Format("{0}", RecursivePrintElement(val));
+                    values += string.Format("{0},", RecursivePrintElement(val));
                     /*dynamic val = des.GetValue(obj);
                     if (val is string)
                         throw new Exception("Do not iterate strings");

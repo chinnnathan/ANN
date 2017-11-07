@@ -79,12 +79,14 @@ namespace ANN.Networks
                 this[this.Count - 1][i].Expected = (Correct[index][i] == (i + 1)) ? 1.0 : -1.0;
             });
 
-            Parallel.For(0, this[0].Count, i => 
+            Parallel.ForEach(this.Where(x=>x.Type == LayerType.Input), layer =>
             {
-                this[0][i].Prediction = Inputs[index][i];
-                Parallel.For(0, this[0][i].InterOut.Count, j =>
+                Parallel.For(0, layer.Count, i =>
                 {
-                    this[0][i].InterOut[j].IValue = Inputs[index][0];
+                    layer[i].InterIn[0].IValue = Inputs[index][i];
+                    layer[i].InterIn[0].DValue = Inputs[index][i];
+                    layer[i].InterIn[0].FValue = Inputs[index][i];
+                    layer[i].Prediction = Inputs[index][i];
                 });
             });
 
@@ -118,16 +120,23 @@ namespace ANN.Networks
             {
                 using (var sw = new StreamWriter("outputs_Backpropagation_.csv".AppendTimeStamp()))
                 {
-                    sw.WriteLine(this[Count-1][0].PrintCSVHeader());
+                    sw.Write("Epoch,");
+                    sw.WriteLine(this[0].PrintCSVHeader());
                     for (int epoch = 0; epoch < Epochs; epoch++)
                     {
                         for (int datasetlabel = 0; datasetlabel < Correct.Count; datasetlabel++)
                         {
                             RunBackprop(datasetlabel);
                             GetOutputAccuracy();
-                            foreach (var neuron in this[Count-1])
-                                sw.WriteLine(neuron.PrintCSVLine());
-                                /*
+                            foreach (var layer in this)
+                            {
+                                foreach (var neuron in this)
+                                {
+                                    sw.Write("{0},", epoch);
+                                    sw.WriteLine(neuron.PrintCSVLine());
+                                }
+                            }
+                            /*
                                 foreach (var neuron in layer)
                                     sw.WriteLine(neuron.PrintCSVLine());*/
                         }

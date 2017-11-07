@@ -68,16 +68,29 @@ namespace ANN.ANNTemplates
                 else
                 {
                     _outputs = AdvancedMath.JMultiplyMatrix(_weights, _values);
+                    if (Type != LayerType.Input)
+                    {
+                        Parallel.For(0, _outputs.Length, i =>
+                        {
+                            Parallel.ForEach(this, neuron =>
+                            {
+                                neuron.Prediction = (double)neuron.RunActivation(_outputs[i][0]);
+                                neuron.BpropValue = (double)neuron.RunGradient(_outputs[i][0]);
+                            });
+                        });
+                    }
 
                     Parallel.ForEach(this, neuron =>
                     {
-                        Parallel.ForEach(neuron.InterOut, output =>
+                        Parallel.ForEach(neuron.InterOut, inter =>
                         {
-                            output.IValue = neuron.Prediction;
+                            inter.DValue = neuron.BpropValue;
+                            inter.FValue = neuron.Prediction;
+                            inter.IValue = _values[this.IndexOf(neuron), 0];
                         });
                     });
 
-                    Parallel.For(0, _outputs.Length, i =>
+                    /*Parallel.For(0, _outputs.Length, i =>
                     {
                         Parallel.For(0, _outputs[i].Length, j =>
                         {
@@ -91,11 +104,6 @@ namespace ANN.ANNTemplates
                             this[i].InterOut[j].DValue = this[i].BpropValue;
                         });
                        // _outputs[i][0] = (double)this[i].RunActivation(_outputs[i][0]);
-                    });
-
-                    /*Parallel.For(0, NextLayer.Count, i =>
-                    {
-                        NextLayer[i].Input = _outputs[i];
                     });*/
                 }
             }

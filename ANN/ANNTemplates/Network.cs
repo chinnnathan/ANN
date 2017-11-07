@@ -51,9 +51,10 @@ namespace ANN.ANNTemplates
                 InitializeLayer(i, nodes, activation, gradient);
             });//Last Async call appropriate, after this order matters
 
+            ActivationFunctions.Del input = ActivationFunctions.Input;
             ActivationFunctions.Del1 softmax = ActivationFunctions.SoftMax;
             ActivationFunctions.Del2 ssoftmax = GradientFunctions.SoftMax;
-            InitializeLayer(0, Inputs[0].Count, activation, gradient);
+            InitializeLayer(0, Inputs[0].Count, input, input); //no real activation function
             InitializeLayer(this.Count - 1, Classes, softmax, ssoftmax);
 
             foreach (var layer in this)
