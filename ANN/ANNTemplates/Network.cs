@@ -13,7 +13,9 @@ namespace ANN.ANNTemplates
     public class Network : List<Layer>
     {
         public List<List<double>> Inputs = new List<List<double>>();
+        public List<List<double>> Correct = new List<List<double>>();
         public int Classes { get; set; }
+        public int Epochs { get; set; }
 
         public Network() { }
         public Network(int layerCount, int neuronCount)
@@ -50,8 +52,9 @@ namespace ANN.ANNTemplates
             });//Last Async call appropriate, after this order matters
 
             ActivationFunctions.Del1 softmax = ActivationFunctions.SoftMax;
-            InitializeLayer(0, Inputs[0].Count / Classes, activation, gradient);
-            InitializeLayer(this.Count - 1, Classes, softmax, softmax);
+            ActivationFunctions.Del2 ssoftmax = GradientFunctions.SoftMax;
+            InitializeLayer(0, Inputs[0].Count, activation, gradient);
+            InitializeLayer(this.Count - 1, Classes, softmax, ssoftmax);
 
             foreach (var layer in this)
             {
@@ -79,30 +82,85 @@ namespace ANN.ANNTemplates
             this[index].AddRange(layerNeuron.ToList());
         }
 
+
+        public void SetCorrect(string filename, int classes=1)
+        {
+            using (var sr = new StreamReader(filename))
+            {
+                while (!sr.EndOfStream)
+                {
+                    List<double> rv = new List<double>();
+                    string pattern = "[a-zA-z]+";
+                    string input = sr.ReadLine();
+                    string[] istr = Regex.Split(input, pattern);
+                    if (istr.Length > 1 || (input.Length <= 1))
+                    {
+                        for (int i = 0; i < classes; i++)
+                            rv.AddRange(istr.Select(x => Double.Parse(x)).ToArray());
+
+                    }
+                    else
+                    {
+                        for (int i = 0; i < classes; i++)
+                        {
+                            byte[] inb = Encoding.ASCII.GetBytes(input);
+                            rv.AddRange(inb.Select(x => (double)x));
+                        }
+                    }
+                    Correct.Add(rv);
+                }
+            }
+        }
+
         public void SetInputs(string filename, int cluster=1)
         {
             using (var sr = new StreamReader(filename))
             {
-                List<double> rv = new List<double>();
-                string pattern = "[a-zA-z]+";
-                string input = sr.ReadLine();
-                string[] istr = Regex.Split(input, pattern);
-                if (istr.Length > 1)
+                while (!sr.EndOfStream)
                 {
-                    for (int i = 0; i < cluster; i++)
-                        rv.AddRange(istr.Select(x => Double.Parse(x)).ToArray());
-
-                }
-                else
-                {
-                    for (int i = 0; i < cluster; i++)
+                    List<double> rv = new List<double>();
+                    string pattern = "[a-zA-z]+";
+                    string input = sr.ReadLine();
+                    string[] istr = Regex.Split(input, pattern);
+                    if (istr.Length > 1)
                     {
-                        byte[] inb = Encoding.ASCII.GetBytes(input);
-                        rv.AddRange(inb.Select(x=>(double)x));
+                        for (int i = 0; i < cluster; i++)
+                            rv.AddRange(istr.Select(x => Double.Parse(x)).ToArray());
+
                     }
+                    else
+                    {
+                        for (int i = 0; i < cluster; i++)
+                        {
+                            byte[] inb = Encoding.ASCII.GetBytes(input);
+                            rv.AddRange(inb.Select(x => (double)x));
+                        }
+                    }
+                    Inputs.Add(rv);
                 }
-                Inputs.Add(rv);
             }
+        }
+
+        public double _correct = 0;
+        public double _overPredict = 0;
+        public double _underPredict = 0;
+        public double GetOutputAccuracy()
+        {
+            foreach (var outlayer in this.Where(x=>x.Type == LayerType.Output))
+            {
+                double max = outlayer.Select(x => x.Prediction).Max();
+                foreach (var neuron in outlayer)
+                {
+                    if ((neuron.Expected > 0) && (neuron.Prediction < max))
+                        _underPredict++;
+                    else if ((neuron.Expected < 0) && (neuron.Prediction == max))
+                        _overPredict++;
+                    else
+                        _correct++;
+                }
+            }
+
+            return (_correct / (_correct + _overPredict + _underPredict));
         }
     }
 }

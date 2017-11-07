@@ -10,6 +10,7 @@ namespace ANN.ANNTemplates
     {
         public delegate double Del(double input);
         public delegate double Del1(double input, double[] other);
+        public delegate double Del2(double target, double actual);
 
         public static double Tanh(double input)
         {

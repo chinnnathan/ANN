@@ -14,5 +14,15 @@ namespace ANN.ANNTemplates
             else if (input == 0) return 1.0F;
             else return (Math.Tanh(input) * (1 - Math.Tanh(input)));
         }
+
+        public static double SoftMax(double target, double actual)
+        {
+            return actual - target;
+        }
+
+        public static double SumSquaredError(double target, double actual)
+        {
+            return 0.5 * Math.Pow(target - actual, 2);
+        }
     }
 }

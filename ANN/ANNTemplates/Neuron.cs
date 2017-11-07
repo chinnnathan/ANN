@@ -15,21 +15,28 @@ namespace ANN.ANNTemplates
         private List<NeuronInterconnect> _output = new List<NeuronInterconnect>();
         private List<NeuronInterconnect> _input = new List<NeuronInterconnect>();
         private List<double> _weights;
+        private double _expected;
+        private double _error;
+        private double _lr = 0.01;
         //private Func<double, double> _activation;
         //private Func<double, double> _gradient;
         private Delegate _activation;
         private Delegate _gradient;
 
+        //neuron values for output files
+        public string Name { get; set; }
+        public double LearningRate { get { return _lr; } set { _lr = value; } }
+        public double BpropValue { get { return _bpropValue; } set { _bpropValue = value; } }
+        public int Momentum { get { return _momentum; } set { _momentum = value; } }
+        public double Expected { get { return _expected; } set { _expected = value; } }
+        public double Prediction { get { return _prediction; } set { _prediction = value; } }
+        public double Error { get { return _error; } set { _error = value; } }
+        public double Input { get; set; }
+        public double Update { get; set; }
+
         //interconnects for neuron
         public List<NeuronInterconnect> InterOut { get { return _output; } set { _output = value; } }
         public List<NeuronInterconnect> InterIn { get { return _input; } set { _input = value; } }
-
-        //neuron values for output files
-        public string Name { get; set; }
-        public double[] Input { get; set; }
-        public double Prediction { get { return _prediction; } set { _prediction = value; } }
-        public double BpropValue { get { return _bpropValue; } set { _bpropValue = value; } }
-        public int Momentum { get { return _momentum; } set { _momentum = value; } }
 
         public List<Neuron> PriorNeurons { get; set; } //neurons connected closer to input
         public List<Neuron> AfterNeurons { get; set; } //neurons connected closer to output

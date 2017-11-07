@@ -10,7 +10,10 @@ namespace ANN.ANNTemplates
         ///<summary>The weight+output values connecting each layer</summary>
     {
         public double Weight { get; set; } //weight of the connection
-        public double Value { get; set; } //value of the last neuron
+        public double IValue { get; set; } //input value of the last neuron
+        public double FValue { get; set; } //value of the last neuron
+        public double DValue { get; set; } //derivative value of neuron
+        public double Error { get; set; } //Error value of neuron
     }
 
     public static class Interconnect
