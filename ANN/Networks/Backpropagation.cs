@@ -86,7 +86,7 @@ namespace ANN.Networks
                     layer[i].InterIn[0].IValue = Inputs[index][i];
                     layer[i].InterIn[0].DValue = Inputs[index][i];
                     layer[i].InterIn[0].FValue = Inputs[index][i];
-                    layer[i].Prediction = Inputs[index][i];
+                    layer[i].Input = Inputs[index][i];
                 });
             });
 
@@ -120,28 +120,28 @@ namespace ANN.Networks
             {
                 using (var sw = new StreamWriter("outputs_Backpropagation_.csv".AppendTimeStamp()))
                 {
-                    sw.Write("Epoch,");
-                    sw.WriteLine(this[0].PrintCSVHeader());
+                    //sw.WriteLine(this[0].PrintCSVHeader());
                     for (int epoch = 0; epoch < Epochs; epoch++)
                     {
                         for (int datasetlabel = 0; datasetlabel < Correct.Count; datasetlabel++)
                         {
                             RunBackprop(datasetlabel);
                             GetOutputAccuracy();
-                            foreach (var layer in this)
+                            UpdateAllWeights();
+
+                            sw.WriteLine("{0},{1},{2},{3},{4}", _classified, _correct, _overPredict, _underPredict, Errors.Last());
+                            /*foreach (var layer in this)
                             {
                                 foreach (var neuron in this)
                                 {
                                     sw.Write("{0},", epoch);
                                     sw.WriteLine(neuron.PrintCSVLine());
                                 }
-                            }
-                            /*
-                                foreach (var neuron in layer)
-                                    sw.WriteLine(neuron.PrintCSVLine());*/
-                        }
-                        Console.WriteLine("\r[{0}] Epoch {1} - Accuracy: {2} Correct: {3} Over: {4} Under:{5}", DateTime.Now, epoch + 1,
-                            GetOutputAccuracy(), _correct, _overPredict, _underPredict);
+                            }*/
+
+                         }
+                            Console.Write("\r[{0}] Epoch {1} - Accuracy: {2:N2}% Correct: {3} Over: {4} Under:{5} Classified:{6}", DateTime.Now, epoch + 1,
+                                GetOutputAccuracy(), _correct, _overPredict, _underPredict, _classified);
                     }
                 }
             }

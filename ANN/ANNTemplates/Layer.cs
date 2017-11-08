@@ -24,39 +24,21 @@ namespace ANN.ANNTemplates
         public int Index { get; set; }
         public LayerType Type { get; set; }
         public double[] Predictions { get { return this.Select(x=>x.Prediction).ToArray(); } }
-        public double[] OutputWeights { get { return _weights.Cast<double>().ToArray(); } }
+        public double[] OutputWeights { get { return this.SelectMany(x => x.InterOut.Select(y => y.Weight)).ToArray(); } }
 
         public void FeedForward()
         {
             try
             {
-                _values = AdvancedMath.ConvertToMatrix(
-                    this.Select(x => x.Prediction).ToArray(),
-                    -1, 1);
-
-                _weights = AdvancedMath.ConvertToMatrix(
-                    this.SelectMany(x => x.InterOut.Select(w => w.Weight)).ToArray(),
-                    this[0].InterOut.Count, Count);
-                
-
                 if (Type == LayerType.Output)
                 {
-                    List<double> v = _values.Cast<double>().ToList();
-
-                    //_outputs = new double[_values.Length, 1];
-                    _outputs = new double[_values.Length][];
-                    Parallel.For(0, _outputs.Length, i =>
+                    List<double> v = this.Select(x => x.Input).ToList();
+                    Parallel.ForEach(this, neuron =>
                     {
-                        _outputs[i] = new double[] { (double)this[i].RunActivation(_values[i, 0], v.ToArray()) };
-                        this[i].Prediction = _outputs[i][0];
-                        this[i].BpropValue = (double)this[i].RunGradient(this[i].Expected, this[i].Prediction);
-                        this[i].Error = GradientFunctions.SumSquaredError(this[i].Expected, this[i].Prediction);
-                        /*Parallel.For(0, _outputs[i].Length, j =>
-                        {
-                            _outputs[i][j] = (double)this[i].RunActivation(_values[i, j], v.ToArray());
-                        });*/
+                        neuron.Prediction = (double) neuron.RunActivation(neuron.Input, v.ToArray());
+                        neuron.BpropValue = (double)neuron.RunGradient(neuron.Expected, neuron.Prediction);
+                        neuron.Error = GradientFunctions.SumSquaredError(neuron.Expected, neuron.Prediction);
                     });
-
                     Parallel.ForEach(this, neuron =>
                     {
                         Parallel.ForEach(neuron.InterIn, input =>
@@ -67,18 +49,21 @@ namespace ANN.ANNTemplates
                 }
                 else
                 {
-                    _outputs = AdvancedMath.JMultiplyMatrix(_weights, _values);
-                    if (Type != LayerType.Input)
+                    Parallel.ForEach(this, neuron =>
                     {
-                        Parallel.For(0, _outputs.Length, i =>
-                        {
-                            Parallel.ForEach(this, neuron =>
-                            {
-                                neuron.Prediction = (double)neuron.RunActivation(_outputs[i][0]);
-                                neuron.BpropValue = (double)neuron.RunGradient(_outputs[i][0]);
-                            });
-                        });
-                    }
+                        neuron.Prediction = (double)neuron.RunActivation(neuron.Input);
+                        neuron.BpropValue = (double)neuron.RunGradient(neuron.Input);
+                    });
+
+                    _values = AdvancedMath.ConvertToMatrix(
+                        this.Select(x => x.Prediction).ToArray(),
+                        -1, 1);
+
+                    _weights = AdvancedMath.ConvertToMatrix(
+                        this.SelectMany(x => x.InterOut.Select(w => w.Weight)).ToArray(),
+                        this[0].InterOut.Count, Count);
+
+                    _outputs = AdvancedMath.JMultiplyMatrix(_weights, _values);
 
                     Parallel.ForEach(this, neuron =>
                     {
@@ -86,25 +71,17 @@ namespace ANN.ANNTemplates
                         {
                             inter.DValue = neuron.BpropValue;
                             inter.FValue = neuron.Prediction;
-                            inter.IValue = _values[this.IndexOf(neuron), 0];
+                            inter.IValue = neuron.Input;
                         });
                     });
 
-                    /*Parallel.For(0, _outputs.Length, i =>
+                    Parallel.For(0, _outputs.Count(), i =>
                     {
-                        Parallel.For(0, _outputs[i].Length, j =>
+                        Parallel.For(0, _outputs[i].Count(), j =>
                         {
-                            _outputs[i][j] = (double)this[i].RunActivation(_outputs[i][j]);
-                            this[i].Prediction = _outputs[i][j];
-                            this[i].BpropValue = (double)this[i].RunGradient(_outputs[i][j]);
+                            NextLayer[i].Input = _outputs[i][j];
                         });
-                        Parallel.For(0, this[i].InterOut.Count, j =>
-                        {
-                            this[i].InterOut[j].FValue = _outputs[i][0];
-                            this[i].InterOut[j].DValue = this[i].BpropValue;
-                        });
-                       // _outputs[i][0] = (double)this[i].RunActivation(_outputs[i][0]);
-                    });*/
+                    });
                 }
             }
             catch (Exception e)
@@ -126,12 +103,9 @@ namespace ANN.ANNTemplates
                     //      = LearningRate * Error Value * Derivative Value
                     Parallel.For(0, Count, i =>
                     {
-                        this[i].Update = this[i].LearningRate *
-                                this[i].BpropValue * this[i].InterIn[0].DValue; // print out value
-
                         Parallel.For(0, this[i].InterIn.Count, j =>
                         {
-                            this[i].InterIn[j].Weight += this[i].LearningRate *
+                            this[i].InterIn[j].Update += this[i].LearningRate *
                                 this[i].BpropValue * this[i].InterIn[j].DValue;
                         });
                     });
@@ -165,13 +139,9 @@ namespace ANN.ANNTemplates
 
                     Parallel.For(0, Count, i =>
                     {
-                        this[i].Update = this[i].LearningRate *
-                                this[i].BpropValue * this[i].InterIn[0].DValue *
-                                this[i].InterIn[0].IValue; // Print out
-
                         Parallel.For(0, this[i].InterIn.Count, j =>
                         {
-                            this[i].InterIn[j].Weight += this[i].LearningRate *
+                            this[i].InterIn[j].Update += this[i].LearningRate *
                                 this[i].BpropValue * this[i].InterIn[j].DValue *
                                 this[i].InterIn[j].IValue;
                         });
@@ -186,6 +156,7 @@ namespace ANN.ANNTemplates
                 Debug.WriteLine("Exception: {0}", e.ToString());
             }
         }
+
 
         public void StandardConnectNeurons(double min, double max)
         {

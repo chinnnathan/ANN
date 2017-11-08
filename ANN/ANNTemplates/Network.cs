@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 using System.Text.RegularExpressions;
 using ANN.Utils;
 
@@ -16,6 +17,8 @@ namespace ANN.ANNTemplates
         public List<List<double>> Correct = new List<List<double>>();
         public int Classes { get; set; }
         public int Epochs { get; set; }
+
+        public List<double> Errors = new List<double>();
 
         public Network() { }
         public Network(int layerCount, int neuronCount)
@@ -113,7 +116,7 @@ namespace ANN.ANNTemplates
             }
         }
 
-        public void SetInputs(string filename, int cluster=1)
+        public void SetInputs(string filename, int cluster=1, bool normalize=true)
         {
             using (var sr = new StreamReader(filename))
             {
@@ -140,28 +143,88 @@ namespace ANN.ANNTemplates
                     Inputs.Add(rv);
                 }
             }
+
+            if (normalize)
+            {
+                List<double> distinct = Inputs.SelectMany(x => x.Select(y => y).Distinct()).Distinct().ToList();
+                Parallel.ForEach(Inputs, input =>
+                {
+                    for(int i=0; i<input.Count; i++)
+                    {
+                        input[i] = distinct.IndexOf(input[i]);
+                    }
+                });
+            }
         }
 
-        public double _correct = 0;
-        public double _overPredict = 0;
-        public double _underPredict = 0;
+        public void UpdateAllWeights(int batchCount=1)
+        {
+            Parallel.ForEach(this.SelectMany(x => x.SelectMany(y => y.InterOut)).ToList(),
+                inter=>
+                {
+                    inter.Weight += (inter.Update / batchCount);
+                }
+            );
+            Parallel.ForEach(this.SelectMany(x => x.SelectMany(y => y.InterOut)).ToList(),
+               inter =>
+               {
+                   inter.Update = 0.0d;
+               }
+           );
+        }
+
+
+        public int _correct = 0;
+        public int _classified = 0;
+        public int _overPredict = 0;
+        public int _underPredict = 0;
         public double GetOutputAccuracy()
         {
-            foreach (var outlayer in this.Where(x=>x.Type == LayerType.Output))
-            {
-                double max = outlayer.Select(x => x.Prediction).Max();
-                foreach (var neuron in outlayer)
+            double sumError = 0;
+            object lockobject = new object();
+            Parallel.ForEach(
+                this.Where(x => x.Type == LayerType.Output).SelectMany(x=>x.Select(y=>y)),
+                () => 0.0d,
+                (x, loopstate, partialresult) =>
                 {
-                    if ((neuron.Expected > 0) && (neuron.Prediction < max))
-                        _underPredict++;
-                    else if ((neuron.Expected < 0) && (neuron.Prediction == max))
-                        _overPredict++;
-                    else
-                        _correct++;
+                    return x.Error + partialresult;
+                },
+                (localPartialSum) =>
+                {
+                    lock(lockobject)
+                    {
+                        sumError += localPartialSum;
+                    }
                 }
-            }
+            );
+            Errors.Add(sumError);
 
-            return (_correct / (_correct + _overPredict + _underPredict));
+            double max = this.Where(x => x.Type == LayerType.Output).SelectMany(x => x.Select(y => y.Prediction)).Max();
+
+            Parallel.ForEach(
+                this.Where(x => x.Type == LayerType.Output).SelectMany(x => x.Select(y => y)),
+                x =>
+                {
+                    if (x.Prediction >= max)
+                    {
+                        if (x.Expected > 0)
+                        {
+                            Interlocked.Increment(ref _correct);
+                            Interlocked.Increment(ref _classified);
+                        }
+                        else
+                            Interlocked.Increment(ref _overPredict);
+                    }
+                    else
+                    {
+                        if (x.Expected < 0)
+                            Interlocked.Increment(ref _correct);
+                        else
+                            Interlocked.Increment(ref _underPredict);
+                    }
+                }
+            );
+            return ((double)_correct / (_correct + _overPredict + _underPredict)) * 100.0d;
         }
     }
 }
