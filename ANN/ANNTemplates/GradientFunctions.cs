@@ -15,6 +15,11 @@ namespace ANN.ANNTemplates
             else return (Math.Tanh(input) * (1 - Math.Tanh(input)));
         }
 
+        public static double Logistic(double input)
+        {
+            return input * (1 - input);
+        }
+
         public static double SoftMax(double target, double actual)
         {
             return actual - target;
@@ -22,7 +27,7 @@ namespace ANN.ANNTemplates
 
         public static double SumSquaredError(double target, double actual)
         {
-            return 0.5 * Math.Pow(target - actual, 2);
+            return (actual - target);
         }
     }
 }

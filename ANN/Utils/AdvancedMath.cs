@@ -104,7 +104,15 @@ namespace ANN.Utils
             {
                 Parallel.For(0, W, x =>
                 {
-                    B[y, x] = A[(y * W) + x];
+                    //B[y, x] = A[(y * W) + x];
+                    try
+                    {
+                        B[y, x] = A[(x * L) + y];
+                    }
+                    catch
+                    {
+                        Console.WriteLine("B[{0},{1}] = A[{1}*{2}+{0}] -> L = {3}", y, x, W, L);
+                    }
                 });
             });
             return B;

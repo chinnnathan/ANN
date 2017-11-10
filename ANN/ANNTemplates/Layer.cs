@@ -36,22 +36,22 @@ namespace ANN.ANNTemplates
                     Parallel.ForEach(this, neuron =>
                     {
                         neuron.Prediction = (double) neuron.RunActivation(neuron.Input, v.ToArray());
-                        neuron.BpropValue = (double)neuron.RunGradient(neuron.Expected, neuron.Prediction);
                         neuron.Error = GradientFunctions.SumSquaredError(neuron.Expected, neuron.Prediction);
-                    });
-                    Parallel.ForEach(this, neuron =>
-                    {
+                        neuron.BpropValue = (double)neuron.RunGradient(neuron.Prediction) * neuron.Error;
+
                         Parallel.ForEach(neuron.InterIn, input =>
                         {
-                            input.Error = neuron.BpropValue;
+                            input.Error = neuron.Error;
                         });
                     });
                 }
+
                 else
                 {
                     Parallel.ForEach(this, neuron =>
                     {
-                        neuron.Prediction = (double)neuron.RunActivation(neuron.Input);
+                        double bias = neuron.InterIn[0].Weight;
+                        neuron.Prediction = (double)neuron.RunActivation(neuron.Input + bias);
                         neuron.BpropValue = (double)neuron.RunGradient(neuron.Input);
                     });
 
@@ -59,9 +59,9 @@ namespace ANN.ANNTemplates
                         this.Select(x => x.Prediction).ToArray(),
                         -1, 1);
 
-                    _weights = AdvancedMath.ConvertToMatrix(
-                        this.SelectMany(x => x.InterOut.Select(w => w.Weight)).ToArray(),
-                        this[0].InterOut.Count, Count);
+                    _weights = AdvancedMath.ConvertToMatrix(this.SelectMany(
+                        x => x.InterOut).Select(w => w.Weight).ToArray(),
+                        this[0].InterOut.Count, this.Count);
 
                     _outputs = AdvancedMath.JMultiplyMatrix(_weights, _values);
 
@@ -105,8 +105,7 @@ namespace ANN.ANNTemplates
                     {
                         Parallel.For(0, this[i].InterIn.Count, j =>
                         {
-                            this[i].InterIn[j].Update += this[i].LearningRate *
-                                this[i].BpropValue * this[i].InterIn[j].DValue;
+                            this[i].InterIn[j].Update += this[i].LearningRate * this[i].BpropValue * this[i].Prediction;
                         });
                     });
                 }
@@ -118,32 +117,26 @@ namespace ANN.ANNTemplates
                     //Gradient = alpha * Delta * f'(z_inj) * xi
                     //      = LearningRate * Sum of( Error Value * weight)
                     //          * Derivative Value * Value input
-                    Parallel.ForEach(this, neuron =>
-                    {
-                        neuron.BpropValue = 0;
-                        neuron.Error = 0;
-                        Parallel.ForEach(neuron.InterOut, output =>
-                        {
-                            neuron.Error += output.Error;
-                            neuron.BpropValue += output.Error * output.DValue * output.Weight;
-                        });
-                    });
+                    _weights = AdvancedMath.ConvertToMatrix(this.SelectMany(
+                        x => x.InterOut).Select(w => w.Weight).ToArray(),
+                        this[0].InterOut.Count, this.Count);
 
-                    Parallel.ForEach(this, neuron =>
-                    {
-                        Parallel.ForEach(neuron.InterIn, input =>
-                        {
-                            input.Error = neuron.Error;
-                        });
-                    });
+                    _values = AdvancedMath.ConvertToMatrix(this.Select(
+                        x => x.InterOut[0].DValue).ToArray(),
+                        -1, 1);
+
+                    _outputs = AdvancedMath.JMultiplyMatrix(_weights, _values);
 
                     Parallel.For(0, Count, i =>
                     {
-                        Parallel.For(0, this[i].InterIn.Count, j =>
+                        this[i].BpropValue = _outputs[i][0] * (double)this[i].RunGradient(this[i].Input);
+                    });
+
+                    Parallel.ForEach(this, neuron =>
+                    {
+                        Parallel.ForEach(neuron.InterIn, inter =>
                         {
-                            this[i].InterIn[j].Update += this[i].LearningRate *
-                                this[i].BpropValue * this[i].InterIn[j].DValue *
-                                this[i].InterIn[j].IValue;
+                            inter.Update += neuron.LearningRate * neuron.BpropValue * inter.FValue;
                         });
                     });
                 }

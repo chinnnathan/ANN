@@ -11,8 +11,6 @@ namespace ANN.Networks
 {
     public class Backpropagation : Network
     {
-        private bool _debug = true;
-
         public Backpropagation() { }
 
         public Backpropagation(int outputnodes, int hiddenlayers=1)
@@ -49,7 +47,7 @@ namespace ANN.Networks
             {
                 Parallel.For(0, this[this.Count - 1].Count, i =>
                 {
-                    this[this.Count - 1][i].Expected = (Correct[index][i] == (i + 1)) ? 1.0 : -1.0;
+                    this[this.Count - 1][i].Expected = (Correct[index][i] == (i + 1)) ? _correctTrain : _incorrectTrain;
                 });
 
                 Parallel.For(0, this[0].Count, i =>
@@ -76,7 +74,7 @@ namespace ANN.Networks
             
             Parallel.For(0, this[this.Count - 1].Count, i =>
             {
-                this[this.Count - 1][i].Expected = (Correct[index][i] == (i + 1)) ? 1.0 : -1.0;
+                this[this.Count - 1][i].Expected = (Correct[index][i] == (i + 1)) ? _correctTrain : _incorrectTrain;
             });
 
             Parallel.ForEach(this.Where(x=>x.Type == LayerType.Input), layer =>
@@ -103,45 +101,42 @@ namespace ANN.Networks
             return true;
         }
 
-        new public bool Train()
+        new public bool Train(bool debug=true)
         {
-            if (!_debug) // want to minimize the amount of operations per iteration
+            Console.WriteLine("[{0}] Starting Training -> Epochs: {1} Training Data Sets: {2} Classes:{3}", DateTime.Now, Epochs, Correct.Count, Classes);
+            double acc = 0;
+            if (!debug) // want to minimize the amount of operations per iteration
             {
                 for (int epoch = 0; epoch < Epochs; epoch++)
                 {
-                    Console.Write("\r[{0}] Starting Epoch {1}", DateTime.Now, epoch + 1);
                     for (int datasetlabel = 0; datasetlabel < Correct.Count; datasetlabel++)
                     {
                         RunBackprop(datasetlabel);
+                        UpdateAllWeights();
                     }
+                    Console.Write("\r[{0}] Epoch {1} - Accuracy: {2:N4}% Correct: {3} Over: {4} Under:{5} Classified:{6}", DateTime.Now, epoch + 1,
+                                GetOutputAccuracy(), _correct, _overPredict, _underPredict, _classified);
                 }
             }
             else
             {
                 using (var sw = new StreamWriter("outputs_Backpropagation_.csv".AppendTimeStamp()))
                 {
-                    //sw.WriteLine(this[0].PrintCSVHeader());
+                    sw.WriteLine(",Errors_{0},Accuracy,Correct,Classification,OverPrediction,", string.Join(",Errors_", Enumerable.Range(1, Correct.Count()).ToArray()));
                     for (int epoch = 0; epoch < Epochs; epoch++)
-                    {
+                    { 
+                        sw.Write("{0},", epoch);
                         for (int datasetlabel = 0; datasetlabel < Correct.Count; datasetlabel++)
                         {
                             RunBackprop(datasetlabel);
-                            GetOutputAccuracy();
+                            acc = GetOutputAccuracy();
                             UpdateAllWeights();
-
-                            sw.WriteLine("{0},{1},{2},{3},{4}", _classified, _correct, _overPredict, _underPredict, Errors.Last());
-                            /*foreach (var layer in this)
-                            {
-                                foreach (var neuron in this)
-                                {
-                                    sw.Write("{0},", epoch);
-                                    sw.WriteLine(neuron.PrintCSVLine());
-                                }
-                            }*/
+                            sw.Write("{0},", Errors.Last());
 
                          }
-                            Console.Write("\r[{0}] Epoch {1} - Accuracy: {2:N2}% Correct: {3} Over: {4} Under:{5} Classified:{6}", DateTime.Now, epoch + 1,
-                                GetOutputAccuracy(), _correct, _overPredict, _underPredict, _classified);
+                        sw.WriteLine("{0},{1},{2},{3},", acc, _correct, _classified, _overPredict);
+                            Console.Write("\r[{0}] Epoch {1} - Accuracy: {2:N4}% Correct: {3} Over: {4} Under:{5} Classified:{6}", DateTime.Now, epoch + 1,
+                                acc, _correct, _overPredict, _underPredict, _classified);
                     }
                 }
             }

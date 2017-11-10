@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,10 +12,16 @@ namespace ANN.ANNTemplates
 {
     public class Network : List<Layer>
     {
+        protected double _incorrectTrain = 0.01;
+        protected double _correctTrain = 0.99;
+        protected double _barrierTrain = 0.5;
+        private bool _debug = true;
+
         public List<List<double>> Inputs = new List<List<double>>();
         public List<List<double>> Correct = new List<List<double>>();
         public int Classes { get; set; }
         public int Epochs { get; set; }
+        public bool Debug { get { return _debug; } set { value = _debug; } }
 
         public List<double> Errors = new List<double>();
 
@@ -38,7 +43,7 @@ namespace ANN.ANNTemplates
         public bool Run() { return false; }
         public bool Train() { return false; }
 
-        public void InitializeStd(int nodes, Delegate activation, Delegate gradient, double min=-1, double max=1)
+        public void InitializeStd(int[] nodes, Delegate activation, Delegate gradient, double min=-1, double max=1)
         {
             for (int i = 1; i < this.Count - 1; i++)
             {
@@ -51,14 +56,14 @@ namespace ANN.ANNTemplates
 
             Parallel.For(1, this.Count - 1, i =>
             {
-                InitializeLayer(i, nodes, activation, gradient);
+                InitializeLayer(i, nodes[i], activation, gradient);
             });//Last Async call appropriate, after this order matters
 
             ActivationFunctions.Del input = ActivationFunctions.Input;
             ActivationFunctions.Del1 softmax = ActivationFunctions.SoftMax;
-            ActivationFunctions.Del2 ssoftmax = GradientFunctions.SoftMax;
+            ActivationFunctions.Del logistic = GradientFunctions.Logistic;
             InitializeLayer(0, Inputs[0].Count, input, input); //no real activation function
-            InitializeLayer(this.Count - 1, Classes, softmax, ssoftmax);
+            InitializeLayer(this.Count - 1, Classes, softmax, logistic);
 
             foreach (var layer in this)
             {
@@ -80,7 +85,7 @@ namespace ANN.ANNTemplates
                 }
                 catch
                 {
-                    Debug.WriteLine("Cannot create Neuron at index: {0}", i);
+                    Console.WriteLine("Cannot create Neuron at index: {0}", i);
                 }
             });
             this[index].AddRange(layerNeuron.ToList());
@@ -89,6 +94,7 @@ namespace ANN.ANNTemplates
 
         public void SetCorrect(string filename, int classes=1)
         {
+            Correct = new List<List<double>>();
             using (var sr = new StreamReader(filename))
             {
                 while (!sr.EndOfStream)
@@ -118,6 +124,7 @@ namespace ANN.ANNTemplates
 
         public void SetInputs(string filename, int cluster=1, bool normalize=true)
         {
+            Inputs = new List<List<double>>();
             using (var sr = new StreamReader(filename))
             {
                 while (!sr.EndOfStream)
@@ -151,7 +158,7 @@ namespace ANN.ANNTemplates
                 {
                     for(int i=0; i<input.Count; i++)
                     {
-                        input[i] = distinct.IndexOf(input[i]);
+                        input[i] = distinct.IndexOf(input[i]) + 0.1; //offset so zeroes don't ruin data
                     }
                 });
             }
@@ -163,14 +170,9 @@ namespace ANN.ANNTemplates
                 inter=>
                 {
                     inter.Weight += (inter.Update / batchCount);
+                    inter.Update = 0.0d;
                 }
             );
-            Parallel.ForEach(this.SelectMany(x => x.SelectMany(y => y.InterOut)).ToList(),
-               inter =>
-               {
-                   inter.Update = 0.0d;
-               }
-           );
         }
 
 
@@ -180,23 +182,8 @@ namespace ANN.ANNTemplates
         public int _underPredict = 0;
         public double GetOutputAccuracy()
         {
-            double sumError = 0;
-            object lockobject = new object();
-            Parallel.ForEach(
-                this.Where(x => x.Type == LayerType.Output).SelectMany(x=>x.Select(y=>y)),
-                () => 0.0d,
-                (x, loopstate, partialresult) =>
-                {
-                    return x.Error + partialresult;
-                },
-                (localPartialSum) =>
-                {
-                    lock(lockobject)
-                    {
-                        sumError += localPartialSum;
-                    }
-                }
-            );
+            var neuronErrors = this.Where(x => x.Type == LayerType.Output).SelectMany(x => x.Select(y => y.Error)).ToArray();
+            double sumError = ActivationFunctions.SumSquaredError(neuronErrors);            
             Errors.Add(sumError);
 
             double max = this.Where(x => x.Type == LayerType.Output).SelectMany(x => x.Select(y => y.Prediction)).Max();
@@ -207,7 +194,7 @@ namespace ANN.ANNTemplates
                 {
                     if (x.Prediction >= max)
                     {
-                        if (x.Expected > 0)
+                        if (x.Expected > _barrierTrain)
                         {
                             Interlocked.Increment(ref _correct);
                             Interlocked.Increment(ref _classified);
@@ -217,7 +204,7 @@ namespace ANN.ANNTemplates
                     }
                     else
                     {
-                        if (x.Expected < 0)
+                        if (x.Expected < _barrierTrain)
                             Interlocked.Increment(ref _correct);
                         else
                             Interlocked.Increment(ref _underPredict);

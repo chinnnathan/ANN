@@ -14,7 +14,17 @@ namespace ANN.Utils
             try
             {
                 PropertyInfo propertyInfo = obj.GetType().GetProperty(str);
-                propertyInfo.SetValue(obj, Convert.ChangeType(setVal, propertyInfo.PropertyType), null);
+                if (propertyInfo.PropertyType.IsArray)
+                {
+                    var array = Array.CreateInstance(propertyInfo.PropertyType.GetElementType(), setVal.Count(f => f ==',') + 1);
+                    var values = setVal.Split(',').Select(n => Convert.ToDouble(n)).ToArray();
+                    for (int i = 0; i < array.Length; i++)
+                        array.SetValue(Convert.ChangeType(values[i], propertyInfo.PropertyType.GetElementType()), i);
+                    propertyInfo.SetValue(obj, array);
+                }
+
+                else
+                    propertyInfo.SetValue(obj, Convert.ChangeType(setVal, propertyInfo.PropertyType), null);
             }
             catch
             {
