@@ -96,7 +96,7 @@ namespace ANN
                 if (NetworkType.ToLower() == "backpropagation")
                 {
                     _networkDefined = true;
-                    _network = new Backpropagation(nodes, _hiddenLayers)
+                    _network = new Backpropagation(_classes, _hiddenLayers)
                     {
                         Debug = _debug,
                     };

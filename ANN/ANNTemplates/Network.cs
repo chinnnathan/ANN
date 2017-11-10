@@ -56,7 +56,7 @@ namespace ANN.ANNTemplates
 
             Parallel.For(1, this.Count - 1, i =>
             {
-                InitializeLayer(i, nodes[i], activation, gradient);
+                InitializeLayer(i, nodes[i-1], activation, gradient);
             });//Last Async call appropriate, after this order matters
 
             ActivationFunctions.Del input = ActivationFunctions.Input;
