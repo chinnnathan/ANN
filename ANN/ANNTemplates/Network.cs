@@ -43,21 +43,30 @@ namespace ANN.ANNTemplates
         public bool Run() { return false; }
         public bool Train() { return false; }
 
-        public void InitializeStd(int[] nodes, Delegate activation, Delegate gradient, double min=-1, double max=1)
+        public void InitializeStd(int[] nodes, Delegate activation, Delegate gradient, double min = -1, double max = 1)
         {
-            for (int i = 1; i < this.Count - 1; i++)
-            {
-                this[i].NextLayer = this[i + 1];
-                this[i].PreviousLayer = this[i - 1];
-            }
 
-            this[0].NextLayer = this[1];
-            this[this.Count - 1].PreviousLayer = this[this.Count - 2];
+            foreach (var layer in this.Where(l => l.Type == LayerType.Hidden || l.Type == LayerType.Input))
+            {
+                foreach (var next in this.Where(l => ((l.Type == LayerType.Hidden) || (l.Type == LayerType.Output)) && (l.Index == layer.Index + 1)))
+                {
+                    layer.NextLayers.Add(next);
+                    next.PreviousLayers.Add(layer);
+                }
+
+                foreach (var ctxlayer in this.Where(l => l.Type == LayerType.Context && l.Index == layer.Index))
+                {
+                    layer.NextLayers.Add(ctxlayer);
+                    layer.PreviousLayers.Add(ctxlayer);
+                    ctxlayer.NextLayers.Add(layer);
+                    ctxlayer.PreviousLayers.Add(layer);
+                }
+            }
 
             Parallel.For(1, this.Count - 1, i =>
             {
-                InitializeLayer(i, nodes[i-1], activation, gradient);
-            });//Last Async call appropriate, after this order matters
+                InitializeLayer(i, nodes[i - 1], activation, gradient);
+            });
 
             ActivationFunctions.Del input = ActivationFunctions.Input;
             ActivationFunctions.Del1 softmax = ActivationFunctions.SoftMax;
@@ -69,7 +78,7 @@ namespace ANN.ANNTemplates
             {
                 layer.StandardConnectNeurons(min, max);
             }
-         }
+        }
 
         public void InitializeLayer(int index, int nodes, Delegate activation, Delegate gradient)
         {

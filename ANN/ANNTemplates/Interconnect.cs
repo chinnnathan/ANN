@@ -26,7 +26,10 @@ namespace ANN.ANNTemplates
         public static double[] RunLayerOutputs(Layer outLayer)
         {
             double[] layerOutputs = new double[outLayer.Count];
-            double[][] weights = new double[outLayer.NextLayer.Count][];
+            int weightLength = 0;
+            foreach (var layer in outLayer.NextLayers)
+                weightLength += layer.Count;
+            double[][] weights = new double[weightLength][];
             for (int i = 0; i < weights.Count(); i++)
             {
                 weights[i] = new double[outLayer.Count];

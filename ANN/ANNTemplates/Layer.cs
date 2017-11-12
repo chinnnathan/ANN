@@ -11,8 +11,8 @@ namespace ANN.ANNTemplates
     public class Layer : List<Neuron>
     {
         // each layer could go to n other layers
-        public Layer PreviousLayer;
-        public Layer NextLayer;
+        public List<Layer> PreviousLayers = new List<Layer>();
+        public List<Layer> NextLayers = new List<Layer>();
 
         private double[,] _weights;
         private double[,] _values;
@@ -69,20 +69,33 @@ namespace ANN.ANNTemplates
                     {
                         Parallel.ForEach(neuron.InterOut, inter =>
                         {
-                            inter.DValue = neuron.BpropValue;
                             inter.FValue = neuron.Prediction;
                             inter.IValue = neuron.Input;
                         });
                     });
 
-                    Parallel.For(0, _outputs.Count(), i =>
+                    var ConnectedNeurons = NextLayers.SelectMany(x => x.Select(n => n)).ToList();
+                    Parallel.For(0, ConnectedNeurons.Count, i =>
+                    {
+                        ConnectedNeurons[i].Input = _outputs[i][0];
+                    });
+
+                    /*Parallel.For(0, _outputs.Count(), i =>
                     {
                         Parallel.For(0, _outputs[i].Count(), j =>
                         {
                             NextLayer[i].Input = _outputs[i][j];
                         });
-                    });
+                    });*/
                 }
+
+                Parallel.ForEach(this, neuron =>
+                {
+                    Parallel.ForEach(neuron.InterIn, inter =>
+                    {
+                        inter.DValue = neuron.BpropValue;
+                    });
+                });
             }
             catch (Exception e)
             {
@@ -119,10 +132,10 @@ namespace ANN.ANNTemplates
                     //          * Derivative Value * Value input
                     _weights = AdvancedMath.ConvertToMatrix(this.SelectMany(
                         x => x.InterOut).Select(w => w.Weight).ToArray(),
-                        this[0].InterOut.Count, this.Count);
+                        Count, this[0].InterOut.Count);
 
-                    _values = AdvancedMath.ConvertToMatrix(this.Select(
-                        x => x.InterOut[0].DValue).ToArray(),
+                    _values = AdvancedMath.ConvertToMatrix(this[0].InterOut.Select(
+                        x => x.DValue).ToArray(),
                         -1, 1);
 
                     _outputs = AdvancedMath.JMultiplyMatrix(_weights, _values);
@@ -166,17 +179,20 @@ namespace ANN.ANNTemplates
                         neuron.InterIn.Add(icIn);
                     }
 
-                    foreach (var nextNeuron in NextLayer)
+                    foreach (var nextLayer in NextLayers)
                     {
-                        NeuronInterconnect icl1 = new NeuronInterconnect()
+                        foreach (var nextNeuron in nextLayer)
                         {
-                            Weight = AdvancedMath.GetRandomRange(min,max),
-                        }; // initialize layer1
-                        NeuronInterconnect icl2 = icl1; // reference layer1 for use in layer2
-                        neuron.InterOut.Add(icl1);
-                        nextNeuron.InterIn.Add(icl2);
-                        neuron.AfterNeurons.Add(nextNeuron);
-                        nextNeuron.PriorNeurons.Add(neuron);
+                            NeuronInterconnect icl1 = new NeuronInterconnect()
+                            {
+                                Weight = AdvancedMath.GetRandomRange(min, max),
+                            }; // initialize layer1
+                            NeuronInterconnect icl2 = icl1; // reference layer1 for use in layer2
+                            neuron.InterOut.Add(icl1);
+                            nextNeuron.InterIn.Add(icl2);
+                            neuron.AfterNeurons.Add(nextNeuron);
+                            nextNeuron.PriorNeurons.Add(neuron);
+                        }
                     }
                 }
             }
@@ -191,6 +207,7 @@ namespace ANN.ANNTemplates
     {
         Input,
         Hidden,
+        Context,
         Output,
     }
 }

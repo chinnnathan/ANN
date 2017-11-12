@@ -40,7 +40,7 @@ namespace ANN
         public string OutputTrainingFile { get { return _outputTrainingFile; } set { _outputTrainingFile=value; } }
         public double LearningRate { get { return _learningRate; } set { _learningRate=value; } }
         public int HiddenLayers { get { return _hiddenLayers; } set { _hiddenLayers = value; } }
-        public int Clasees { get { return _classes; } set { _classes = value; } }
+        public int Classes { get { return _classes; } set { _classes = value; } }
         public int Cluster { get { return _cluster; } set { _cluster = value; } }
         public int Epochs { get { return _epochs; } set { _epochs = value; } }
         public int[] Nodes { get { return _nodes; } set { _nodes = value; } }
@@ -68,6 +68,11 @@ namespace ANN
 
         public void RunProgram(string[] args)
         {
+            if (args.Any(x=>x.ToLower()=="-help"))
+            {
+                this.PrintJSONString();
+                return;
+            }
             SetVariables(args);
             InterpretVariables();
         }
@@ -97,6 +102,15 @@ namespace ANN
                 {
                     _networkDefined = true;
                     _network = new Backpropagation(_classes, _hiddenLayers)
+                    {
+                        Debug = _debug,
+                    };
+                }
+
+                if (NetworkType.ToLower() == "recurrent")
+                {
+                    _networkDefined = true;
+                    _network = new Recurrent(_classes, _hiddenLayers)
                     {
                         Debug = _debug,
                     };

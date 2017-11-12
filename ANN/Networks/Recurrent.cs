@@ -9,11 +9,11 @@ using System.Diagnostics;
 
 namespace ANN.Networks
 {
-    public class Backpropagation : Network
+    public class Recurrent : Network
     {
-        public Backpropagation() { }
+        public Recurrent() { }
 
-        public Backpropagation(int outputnodes, int hiddenlayers=1)
+        public Recurrent(int outputnodes, int hiddenlayers = 1)
         {
             Layer input = new Layer()
             {
@@ -21,23 +21,32 @@ namespace ANN.Networks
                 Label = "Input",
                 Type = LayerType.Input,
             };
+            Add(input);
+
             Layer output = new Layer()
             {
                 Index = hiddenlayers + 1,
                 Label = "Output",
                 Type = LayerType.Output,
             };
-            Add(input);
+            Add(output);
 
-            for(int i=0; i<hiddenlayers; i++)
+            for (int i = 0; i < hiddenlayers; i++)
             {
                 Add(new Layer()
-                {   Index = i + 1,
+                {
+                    Index = i + 1,
                     Label = string.Format("HiddenLayer_{0}", i),
                     Type = LayerType.Hidden,
                 });
+
+                Add(new Layer()
+                {
+                    Index = i + 1,
+                    Label = string.Format("ContextLayer_{0}", i),
+                    Type = LayerType.Context,
+                });
             }
-            Add(output);
         }
 
         new public bool Run()
@@ -74,15 +83,15 @@ namespace ANN.Networks
             return true;
         }
 
-        private bool RunBackprop(int index)
+        private bool RunRecurrent(int index)
         {
-            
+
             Parallel.For(0, this[this.Count - 1].Count, i =>
             {
                 this[this.Count - 1][i].Expected = (Correct[index][i] == (i + 1)) ? _correctTrain : _incorrectTrain;
             });
 
-            Parallel.ForEach(this.Where(x=>x.Type == LayerType.Input), layer =>
+            Parallel.ForEach(this.Where(x => x.Type == LayerType.Input), layer =>
             {
                 Parallel.For(0, layer.Count, i =>
                 {
@@ -98,15 +107,15 @@ namespace ANN.Networks
                 layer.FeedForward();
             }
 
-            foreach (var layer in this.Select(x=>x).Reverse())
+            foreach (var layer in this.Select(x => x).Reverse())
             {
                 layer.BackPropagate();
             }
-            
+
             return true;
         }
 
-        new public bool Train(bool debug=true)
+        public bool Train(bool debug = true)
         {
             Console.WriteLine("[{0}] Starting Training -> Epochs: {1} Training Data Sets: {2} Classes:{3}", DateTime.Now, Epochs, Correct.Count, Classes);
             double acc = 0;
@@ -116,7 +125,7 @@ namespace ANN.Networks
                 {
                     for (int datasetlabel = 0; datasetlabel < Correct.Count; datasetlabel++)
                     {
-                        RunBackprop(datasetlabel);
+                        RunRecurrent(datasetlabel);
                         UpdateAllWeights();
                     }
                     Console.Write("\r[{0}] Epoch {1} - Accuracy: {2:N4}% Correct: {3} Over: {4} Under:{5} Classified:{6}", DateTime.Now, epoch + 1,
@@ -125,23 +134,23 @@ namespace ANN.Networks
             }
             else
             {
-                using (var sw = new StreamWriter("outputs_Backpropagation_.csv".AppendTimeStamp()))
+                using (var sw = new StreamWriter("outputs_Recurrent_.csv".AppendTimeStamp()))
                 {
                     sw.WriteLine(",Errors_{0},Accuracy,Correct,Classification,OverPrediction,", string.Join(",Errors_", Enumerable.Range(1, Correct.Count()).ToArray()));
                     for (int epoch = 0; epoch < Epochs; epoch++)
-                    { 
+                    {
                         sw.Write("{0},", epoch);
                         for (int datasetlabel = 0; datasetlabel < Correct.Count; datasetlabel++)
                         {
-                            RunBackprop(datasetlabel);
+                            RunRecurrent(datasetlabel);
                             acc = GetOutputAccuracy();
                             UpdateAllWeights();
                             sw.Write("{0},", Errors.Last());
 
-                         }
+                        }
                         sw.WriteLine("{0},{1},{2},{3},", acc, _correct, _classified, _overPredict);
-                            Console.Write("\r[{0}] Epoch {1} - Accuracy: {2:N4}% Correct: {3} Over: {4} Under:{5} Classified:{6}", DateTime.Now, epoch + 1,
-                                acc, _correct, _overPredict, _underPredict, _classified);
+                        Console.Write("\r[{0}] Epoch {1} - Accuracy: {2:N4}% Correct: {3} Over: {4} Under:{5} Classified:{6}", DateTime.Now, epoch + 1,
+                            acc, _correct, _overPredict, _underPredict, _classified);
                     }
                 }
             }

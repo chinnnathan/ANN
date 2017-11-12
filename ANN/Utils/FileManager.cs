@@ -24,7 +24,7 @@ namespace ANN.Utils
             return jsonString;
         }
 
-        public static void PrintJSONString(object o)
+        public static void PrintJSONString(this object o)
         {
             var jsonString = JsonConvert.SerializeObject(
                 o, Formatting.Indented,
