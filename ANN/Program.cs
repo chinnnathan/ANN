@@ -13,18 +13,18 @@ namespace ANN
     class Program
     {
         private string  _networkType = "Backpropagation";
-        private string  _trainingFile = "LetterTrainingHW1.dat";
-        private string  _testingFile = "LetterTestingHW1.dat";
-        private string  _validationFile = "LetterValid.csv";
+        private string  _trainingFile = "ASDNT0043_Site_1_ZEP0001GU5_TEST.csv";
+        private string  _testingFile = "ASDNT0043_Site_1_ZEP0001GU5_TEST.csv";
+        private string  _validationFile = "ASDNT0043_Site_1_ZEP0001GU5_VALID.csv";
         private string  _outputTestingFile = "TestingOutput.csv";
         private string  _outputTrainingFile = "TrainingOutput.csv";
         private double  _learningRate = 0.005;
         private int     _hiddenLayers = 1;
         private int     _classes = 7;
-        private int     _cluster = 9;
+        private int     _cluster = 1;
         private int[]   _nodes = new int[] { 15, 25, 35, 45, 55};
         private int     _epochs = 50;
-        private bool    _normalize = true;
+        private bool    _normalize = false;
         private bool    _newNetwork = true;
         private bool    _train = true;
         private bool    _run = false;

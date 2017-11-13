@@ -63,21 +63,42 @@ namespace ANN.ANNTemplates
                 }
             }
 
-            Parallel.For(1, this.Count - 1, i =>
-            {
-                InitializeLayer(i, nodes[i - 1], activation, gradient);
-            });
-
             ActivationFunctions.Del input = ActivationFunctions.Input;
+            ActivationFunctions.Del context = ActivationFunctions.Context;
             ActivationFunctions.Del1 softmax = ActivationFunctions.SoftMax;
             ActivationFunctions.Del logistic = GradientFunctions.Logistic;
-            InitializeLayer(0, Inputs[0].Count, input, input); //no real activation function
-            InitializeLayer(this.Count - 1, Classes, softmax, logistic);
 
-            foreach (var layer in this)
-            {
-                layer.StandardConnectNeurons(min, max);
-            }
+            
+
+            Parallel.ForEach(this.Where(x => x.Type == LayerType.Input),
+                layer =>
+                {
+                    InitializeLayer(layer.Index, Inputs[0].Count, input, input);
+                });
+
+            Parallel.ForEach(this.Where(x => x.Type == LayerType.Hidden),
+                layer =>
+                {
+                    InitializeLayer(layer.Index, nodes[layer.Index-1], activation, gradient);
+                });
+
+            Parallel.ForEach(this.Where(x => x.Type == LayerType.Context),
+                layer =>
+                {
+                    InitializeLayer(layer.Index+1, nodes[layer.Index-1], context, context);
+                });
+
+            Parallel.ForEach(this.Where(x => x.Type == LayerType.Output),
+                layer =>
+                {
+                    InitializeLayer(layer.Index+1, Classes, softmax, logistic);
+                });
+
+            Parallel.ForEach(this,
+                layer =>
+                {
+                    layer.StandardConnectNeurons(min, max);
+                });
         }
 
         public void InitializeLayer(int index, int nodes, Delegate activation, Delegate gradient)
@@ -139,7 +160,7 @@ namespace ANN.ANNTemplates
                 while (!sr.EndOfStream)
                 {
                     List<double> rv = new List<double>();
-                    string pattern = "[a-zA-z]+";
+                    string pattern = "[,a-zA-z]+";
                     string input = sr.ReadLine();
                     string[] istr = Regex.Split(input, pattern);
                     if (istr.Length > 1)
@@ -176,7 +197,7 @@ namespace ANN.ANNTemplates
         public void UpdateAllWeights(int batchCount=1)
         {
             Parallel.ForEach(this.SelectMany(x => x.SelectMany(y => y.InterOut)).ToList(),
-                inter=>
+                inter =>
                 {
                     inter.Weight += (inter.Update / batchCount);
                     inter.Update = 0.0d;

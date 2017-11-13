@@ -29,7 +29,6 @@ namespace ANN.Networks
                 Label = "Output",
                 Type = LayerType.Output,
             };
-            Add(output);
 
             for (int i = 0; i < hiddenlayers; i++)
             {
@@ -47,6 +46,8 @@ namespace ANN.Networks
                     Type = LayerType.Context,
                 });
             }
+
+            Add(output);
         }
 
         new public bool Run()
@@ -102,7 +103,7 @@ namespace ANN.Networks
                 });
             });
 
-            foreach (var layer in this.Where(x => x.Index != this.Count))
+            foreach (var layer in this.Where(x => x.Type != LayerType.Output))
             {
                 layer.FeedForward();
             }

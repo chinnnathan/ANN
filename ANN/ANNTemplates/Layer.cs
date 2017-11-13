@@ -174,24 +174,44 @@ namespace ANN.ANNTemplates
                     {
                         NeuronInterconnect icIn = new NeuronInterconnect()
                         {
-                            Weight = AdvancedMath.GetRandomRange(min, max),
+                            //Weight = AdvancedMath.GetRandomRange(min, max),
+                            Weight = 1,
                         };
                         neuron.InterIn.Add(icIn);
                     }
 
+                    
+
                     foreach (var nextLayer in NextLayers)
                     {
-                        foreach (var nextNeuron in nextLayer)
+                        if (nextLayer.Type == LayerType.Context)
                         {
                             NeuronInterconnect icl1 = new NeuronInterconnect()
                             {
-                                Weight = AdvancedMath.GetRandomRange(min, max),
+                                Weight = 1,
                             }; // initialize layer1
-                            NeuronInterconnect icl2 = icl1; // reference layer1 for use in layer2
+
+                            int i = IndexOf(neuron);
                             neuron.InterOut.Add(icl1);
-                            nextNeuron.InterIn.Add(icl2);
-                            neuron.AfterNeurons.Add(nextNeuron);
-                            nextNeuron.PriorNeurons.Add(neuron);
+                            nextLayer[i].InterIn.Add(icl1);
+                            neuron.AfterNeurons.Add(nextLayer[i]);
+                            nextLayer[i].PriorNeurons.Add(neuron);
+                        }
+
+                        else
+                        {
+                            foreach (var nextNeuron in nextLayer)
+                            {
+                                NeuronInterconnect icl1 = new NeuronInterconnect()
+                                {
+                                    Weight = AdvancedMath.GetRandomRange(min, max),
+                                }; // initialize layer1
+                                NeuronInterconnect icl2 = icl1; // reference layer1 for use in layer2
+                                neuron.InterOut.Add(icl1);
+                                nextNeuron.InterIn.Add(icl2);
+                                neuron.AfterNeurons.Add(nextNeuron);
+                                nextNeuron.PriorNeurons.Add(neuron);
+                            }
                         }
                     }
                 }

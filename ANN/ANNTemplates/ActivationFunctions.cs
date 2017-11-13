@@ -83,5 +83,10 @@ namespace ANN.ANNTemplates
         {
             return input;
         }
+
+        public static double Context(double input)
+        {
+            return input;
+        }
     }
 }
