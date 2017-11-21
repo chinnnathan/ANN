@@ -31,5 +31,27 @@ namespace ANN.Utils
                 Console.WriteLine("Cannot Find Variable: {0}", str);
             }
         }
+
+        public static List<Tuple<string, dynamic>> GetVariableNames(this object obj)
+        {
+            List<string> names = new List<string>();
+            List<dynamic> vals = new List<dynamic>();
+            List<Tuple<string, dynamic>> ret = new List<Tuple<string, dynamic>>();
+            try
+            {
+                names = obj.GetType().GetProperties().Select(x => x.Name).ToList();
+                vals = obj.GetType().GetProperties().Select(x => x.GetValue(obj)).ToList();
+                var zipObj = names.Zip(vals, (n, v) => new { Name = n, Value = v });
+                foreach(var z in zipObj)
+                {
+                    ret.Add(new Tuple<string, dynamic>(z.Name, z.Value));
+                }
+            }
+            catch
+            {
+                Console.WriteLine("Cannot access object");  
+            }
+            return ret;
+        }
     }
 }

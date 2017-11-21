@@ -10,7 +10,7 @@ using ANN.ANNTemplates;
 
 namespace ANN
 {
-    class Program
+    public class ANN
     {
         private string  _networkType = "Backpropagation";
         private string  _trainingFile = "ASDNT0043_Site_1_ZEP0001GU5_TEST.csv";
@@ -52,11 +52,17 @@ namespace ANN
 
         static void Main(string[] args)
         {
-            Program pr = new Program();
+            ANN pr = new ANN();
+            pr.RunCLI(args);
+        }
+
+
+        public void RunCLI(string[] args)
+        {
             string ui = "r";
             do
             {
-                pr.RunProgram(args);
+                RunProgram(args);
                 Console.WriteLine("Enter q to quit: ");
                 ui = Console.ReadLine();
                 if (ui == "q")
@@ -64,7 +70,9 @@ namespace ANN
                 else
                     args = ui.Split(' ').ToList().ToArray();
             } while (ui != "q");
+
         }
+
 
         public void RunProgram(string[] args)
         {

@@ -69,6 +69,7 @@
     <Compile Include="ANNTemplates\Neuron.cs" />
     <Compile Include="Networks\Backpropagation.cs" />
     <Compile Include="Networks\Recurrent.cs" />
+    <Compile Include="Networks\SOM.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utils\AdvancedMath.cs" />
