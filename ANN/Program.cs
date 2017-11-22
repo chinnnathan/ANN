@@ -22,6 +22,7 @@ namespace ANN
         private int     _hiddenLayers = 1;
         private int     _classes = 7;
         private int     _cluster = 1;
+        private int     _diameter = 2;
         private int[]   _nodes = new int[] { 15, 25, 35, 45, 55};
         private int     _epochs = 50;
         private bool    _normalize = false;
@@ -42,6 +43,7 @@ namespace ANN
         public int HiddenLayers { get { return _hiddenLayers; } set { _hiddenLayers = value; } }
         public int Classes { get { return _classes; } set { _classes = value; } }
         public int Cluster { get { return _cluster; } set { _cluster = value; } }
+        public int Diameter { get { return _diameter; } set { _diameter = value; } }
         public int Epochs { get { return _epochs; } set { _epochs = value; } }
         public int[] Nodes { get { return _nodes; } set { _nodes = value; } }
         public bool Normalize { get { return _normalize; } set { _normalize = value; } }
@@ -122,6 +124,16 @@ namespace ANN
                     {
                         Debug = _debug,
                     };
+                }
+
+                if (NetworkType.ToLower() == "som")
+                {
+                    _networkDefined = true;
+                    _network = new SOM(_classes, _hiddenLayers)
+                    {
+                        Debug = _debug,
+                    };
+                    _network.Diameter = Diameter;
                 }
 
                 _network.Classes = _classes;

@@ -17,11 +17,20 @@ namespace ANN.ANNTemplates
         protected double _barrierTrain = 0.5;
         private bool _debug = true;
 
+        private ActivationFunctions.Del _input = ActivationFunctions.Input;
+        private ActivationFunctions.Del _context = ActivationFunctions.Context;
+        private ActivationFunctions.Del1 _output = ActivationFunctions.SoftMax;
+        private ActivationFunctions.Del _outGradient = GradientFunctions.Logistic;
+
         public List<List<double>> Inputs = new List<List<double>>();
         public List<List<double>> Correct = new List<List<double>>();
         public int Classes { get; set; }
         public int Epochs { get; set; }
         public bool Debug { get { return _debug; } set { value = _debug; } }
+        public ActivationFunctions.Del Input { get { return _input; } set { value = _input; } }
+        public ActivationFunctions.Del Context { get { return _context; } set { value = _context; } }
+        public ActivationFunctions.Del1 Output { get { return _output; } set { value = _output; } }
+        public ActivationFunctions.Del OutGradient { get { return _outGradient; } set { value = _outGradient; } }
 
         public List<double> Errors = new List<double>();
 
@@ -63,17 +72,13 @@ namespace ANN.ANNTemplates
                 }
             }
 
-            ActivationFunctions.Del input = ActivationFunctions.Input;
-            ActivationFunctions.Del context = ActivationFunctions.Context;
-            ActivationFunctions.Del1 softmax = ActivationFunctions.SoftMax;
-            ActivationFunctions.Del logistic = GradientFunctions.Logistic;
 
             
 
             Parallel.ForEach(this.Where(x => x.Type == LayerType.Input),
                 layer =>
                 {
-                    InitializeLayer(layer.Index, Inputs[0].Count, input, input);
+                    InitializeLayer(layer.Index, Inputs[0].Count, Input, Input);
                 });
 
             Parallel.ForEach(this.Where(x => x.Type == LayerType.Hidden),
@@ -85,13 +90,13 @@ namespace ANN.ANNTemplates
             Parallel.ForEach(this.Where(x => x.Type == LayerType.Context),
                 layer =>
                 {
-                    InitializeLayer(layer.Index+1, nodes[layer.Index-1], context, context);
+                    InitializeLayer(layer.Index+1, nodes[layer.Index-1], Context, Context);
                 });
 
             Parallel.ForEach(this.Where(x => x.Type == LayerType.Output),
                 layer =>
                 {
-                    InitializeLayer(layer.Index+1, Classes, softmax, logistic);
+                    InitializeLayer(layer.Index+1, Classes, Output, OutGradient);
                 });
 
             Parallel.ForEach(this,

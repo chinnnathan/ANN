@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ANN.ANNTemplates
 {
-    class ActivationFunctions
+    public class ActivationFunctions
     {
         public delegate double Del(double input);
         public delegate double Del1(double input, double[] other);
@@ -45,6 +45,11 @@ namespace ANN.ANNTemplates
             );
 
             return 0.5 * error;
+        }
+
+        public static double Distance(double target, double actual)
+        {
+            return target - actual;
         }
 
         public static double SoftMax(double input, double[] other)

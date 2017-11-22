@@ -164,6 +164,52 @@ namespace ANN.ANNTemplates
         }
 
 
+        public void SelfOrganizeForward()
+        {
+                Parallel.ForEach(this, neuron =>
+                {
+                    double bias = neuron.InterIn[0].Weight;
+                    neuron.Prediction = (double)neuron.RunActivation(neuron.Input + bias);
+                    neuron.BpropValue = (double)neuron.RunGradient(neuron.Input);
+                });
+
+                _values = AdvancedMath.ConvertToMatrix(
+                    this.Select(x => x.Prediction).ToArray(),
+                    -1, 1);
+
+                _weights = AdvancedMath.ConvertToMatrix(this.SelectMany(
+                    x => x.InterOut).Select(w => w.Weight).ToArray(),
+                    this[0].InterOut.Count, this.Count);
+
+                _outputs = AdvancedMath.JMultiplyMatrix(_weights, _values);
+
+                Parallel.ForEach(this, neuron =>
+                {
+                    Parallel.ForEach(neuron.InterOut, inter =>
+                    {
+                        inter.FValue = neuron.Prediction;
+                        inter.IValue = neuron.Input;
+                    });
+                });
+
+                var ConnectedNeurons = NextLayers.SelectMany(x => x.Select(n => n)).ToList();
+                Parallel.For(0, ConnectedNeurons.Count, i =>
+                {
+                    ConnectedNeurons[i].Input = _outputs[i][0];
+                });
+
+
+            Parallel.ForEach(this, neuron =>
+            {
+                Parallel.ForEach(neuron.InterIn, inter =>
+                {
+                    inter.DValue = neuron.BpropValue;
+                });
+            });
+
+        }
+
+
         public void StandardConnectNeurons(double min, double max)
         {
             try

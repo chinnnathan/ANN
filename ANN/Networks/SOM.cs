@@ -12,6 +12,12 @@ namespace ANN.Networks
 {
     class SOM : Network
     {
+        private ActivationFunctions.Del2 _output = ActivationFunctions.Distance;
+        new public ActivationFunctions.Del2 Output { get { return _output; } set { _output = value; } }
+
+        public int Diameter = 2;
+        public int MapDimensions = 2;
+
         public SOM() { }
 
         public SOM(int outputnodes, int hiddenlayers=0)

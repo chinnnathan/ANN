@@ -28,12 +28,46 @@ namespace ANNGUI.UserIO
             int i = 0;
             foreach (var variable in _variables)
             {
-                ListViewItem lvi = new ListViewItem();
+                Model item = new Model(variable, -1, "TextBox");
                 listView.Items.Add(variable);
                 listView.Items.Add(i);
                 i++;
             }
         }
+    }
 
+    public class Model
+    {
+        private dynamic _value;
+        public string Name { get; set; }
+        public string Value { get { return string.Format("{0}", _value); } }
+        public string View { get; set; }
+
+        public Model() { }
+        public Model(string name, dynamic value, string view)
+        {
+            _value = value;
+            Name = name;
+            View = view;
+        }
+
+    }
+
+    public class DynamicDataTemplateSelector : DataTemplateSelector
+    {
+        public override DataTemplate
+            SelectTemplate(object item, DependencyObject container)
+        {
+            FrameworkElement element = container as FrameworkElement;
+
+            if (element != null && item != null && item is Task)
+            {
+                Model model = item as Model;
+
+                return (DataTemplate)element.FindResource(model.View + "Template");
+            }
+
+            return null;
+        }
     }
 }
