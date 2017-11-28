@@ -16,23 +16,29 @@ namespace ANN.ANNTemplates
         protected double _correctTrain = 0.99;
         protected double _barrierTrain = 0.5;
         private bool _debug = true;
+        private bool _finished = false;
+        private List<List<Tuple<double, double>>> _graph = new List<List<Tuple<double, double>>>();
 
         private ActivationFunctions.Del _input = ActivationFunctions.Input;
         private ActivationFunctions.Del _context = ActivationFunctions.Context;
-        private ActivationFunctions.Del1 _output = ActivationFunctions.SoftMax;
+        protected ActivationFunctions.Del1 _output = ActivationFunctions.SoftMax;
         private ActivationFunctions.Del _outGradient = GradientFunctions.Logistic;
 
         public List<List<double>> Inputs = new List<List<double>>();
         public List<List<double>> Correct = new List<List<double>>();
         public int Classes { get; set; }
         public int Epochs { get; set; }
-        public bool Debug { get { return _debug; } set { value = _debug; } }
+        public bool Debug { get { return _debug; } set { _debug = value; } }
+        public bool Finished { get { return _finished; } set { _finished = value; } }
         public ActivationFunctions.Del Input { get { return _input; } set { value = _input; } }
         public ActivationFunctions.Del Context { get { return _context; } set { value = _context; } }
         public ActivationFunctions.Del1 Output { get { return _output; } set { value = _output; } }
         public ActivationFunctions.Del OutGradient { get { return _outGradient; } set { value = _outGradient; } }
 
         public List<double> Errors = new List<double>();
+
+        public List<List<Tuple<double, double>>> Graph { get { return _graph; } set { _graph = value; } }
+        public List<int> IgnoreCol { get; set; }
 
         public Network() { }
         public Network(int layerCount, int neuronCount)
@@ -51,6 +57,8 @@ namespace ANN.ANNTemplates
 
         public bool Run() { return false; }
         public bool Train() { return false; }
+
+        public void GetGraph() { }
 
         public void InitializeStd(int[] nodes, Delegate activation, Delegate gradient, double min = -1, double max = 1)
         {
@@ -96,7 +104,7 @@ namespace ANN.ANNTemplates
             Parallel.ForEach(this.Where(x => x.Type == LayerType.Output),
                 layer =>
                 {
-                    InitializeLayer(layer.Index+1, Classes, Output, OutGradient);
+                    InitializeLayer(layer.Index, Classes, Output, OutGradient);
                 });
 
             Parallel.ForEach(this,
@@ -126,6 +134,22 @@ namespace ANN.ANNTemplates
             this[index].AddRange(layerNeuron.ToList());
         }
 
+        private string[] RemoveIndex(string[] input)
+        {
+            var ret = input.ToList();
+            foreach (int index in IgnoreCol)
+            {
+                try
+                {
+                    ret.RemoveAt(index);
+                }
+                catch
+                {
+                    continue;
+                }
+            }
+            return ret.ToArray();
+        }
 
         public void SetCorrect(string filename, int classes=1)
         {
@@ -138,11 +162,11 @@ namespace ANN.ANNTemplates
                     string pattern = "[a-zA-z]+";
                     string input = sr.ReadLine();
                     string[] istr = Regex.Split(input, pattern);
+                    istr = RemoveIndex(istr);
                     if (istr.Length > 1 || (input.Length <= 1))
                     {
                         for (int i = 0; i < classes; i++)
                             rv.AddRange(istr.Select(x => Double.Parse(x)).ToArray());
-
                     }
                     else
                     {
@@ -157,7 +181,7 @@ namespace ANN.ANNTemplates
             }
         }
 
-        public void SetInputs(string filename, int cluster=1, bool normalize=true)
+        public void SetInputs(string filename, int cluster, bool normalize=true)
         {
             Inputs = new List<List<double>>();
             using (var sr = new StreamReader(filename))
@@ -165,18 +189,18 @@ namespace ANN.ANNTemplates
                 while (!sr.EndOfStream)
                 {
                     List<double> rv = new List<double>();
-                    string pattern = "[,a-zA-z]+";
-                    string input = sr.ReadLine();
-                    string[] istr = Regex.Split(input, pattern);
-                    if (istr.Length > 1)
+                    string pattern = "[ |,a-zA-z]+";
+                    for (int i = 0; i < cluster; i++)
                     {
-                        for (int i = 0; i < cluster; i++)
+                        string input = sr.ReadLine();
+                        string[] istr = Regex.Split(input, pattern);
+                        istr = RemoveIndex(istr);
+                        if (istr.Length > 1)
+                        {
                             rv.AddRange(istr.Select(x => Double.Parse(x)).ToArray());
 
-                    }
-                    else
-                    {
-                        for (int i = 0; i < cluster; i++)
+                        }
+                        else
                         {
                             byte[] inb = Encoding.ASCII.GetBytes(input);
                             rv.AddRange(inb.Select(x => (double)x));

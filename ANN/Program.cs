@@ -12,21 +12,21 @@ namespace ANN
 {
     public class ANN
     {
-        private string  _networkType = "Backpropagation";
-        private string  _trainingFile = "ASDNT0043_Site_1_ZEP0001GU5_TEST.csv";
-        private string  _testingFile = "ASDNT0043_Site_1_ZEP0001GU5_TEST.csv";
-        private string  _validationFile = "ASDNT0043_Site_1_ZEP0001GU5_VALID.csv";
+        private string  _networkType = "SOM";
+        private string  _trainingFile = "C:/Users/nathan/Downloads/ntnu-som-master/ntnu-som-master/assets/western_sahara.txt";
+        private string  _testingFile = "C:/Users/nathan/Downloads/ntnu-som-master/ntnu-som-master/assets/western_sahara.txt";
+        private string  _validationFile = "C:/Users/nathan/Downloads/ntnu-som-master/ntnu-som-master/assets/western_sahara.txt";
         private string  _outputTestingFile = "TestingOutput.csv";
         private string  _outputTrainingFile = "TrainingOutput.csv";
-        private double  _learningRate = 0.005;
-        private int     _hiddenLayers = 1;
-        private int     _classes = 7;
+        private double _learningRate = 0.0001;
+        private int     _hiddenLayers = 0;
+        private int     _classes = 29;
         private int     _cluster = 1;
-        private int     _diameter = 2;
-        private int[]   _nodes = new int[] { 15, 25, 35, 45, 55};
-        private int     _epochs = 50;
+        private int     _radius = 1;
+        private int[]   _nodes = new int[] { 38 };
+        private int     _epochs = 500;
         private bool    _normalize = false;
-        private bool    _newNetwork = true;
+        private bool    _newNetwork = false;
         private bool    _train = true;
         private bool    _run = false;
         private bool    _debug = true;
@@ -43,7 +43,7 @@ namespace ANN
         public int HiddenLayers { get { return _hiddenLayers; } set { _hiddenLayers = value; } }
         public int Classes { get { return _classes; } set { _classes = value; } }
         public int Cluster { get { return _cluster; } set { _cluster = value; } }
-        public int Diameter { get { return _diameter; } set { _diameter = value; } }
+        public int Radius { get { return _radius; } set { _radius = value; } }
         public int Epochs { get { return _epochs; } set { _epochs = value; } }
         public int[] Nodes { get { return _nodes; } set { _nodes = value; } }
         public bool Normalize { get { return _normalize; } set { _normalize = value; } }
@@ -51,6 +51,11 @@ namespace ANN
         public bool Train { get { return _train; } set { _train = value; } }
         public bool Run { get { return _run; } set { _run = value; } }
         public bool Debug { get { return _debug; } set { _debug = value; } }
+        public bool Finished { get { return _network.Finished; } }
+
+        public List<List<Tuple<double, double>>> Graph { get { return ((Network)_network).Graph; } }
+
+        public ANN() { _network = new Network(); }
 
         static void Main(string[] args)
         {
@@ -132,8 +137,10 @@ namespace ANN
                     _network = new SOM(_classes, _hiddenLayers)
                     {
                         Debug = _debug,
+                        IgnoreCol = new List<int>() { 0 },
                     };
-                    _network.Diameter = Diameter;
+                    _activation = ActivationFunctions.Chicago;
+                    _network.Radius = Radius;
                 }
 
                 _network.Classes = _classes;
@@ -152,6 +159,7 @@ namespace ANN
             if (_networkDefined)
             {
                 bool nwt = (_train) ? _network.Train(Debug) : false;
+
                 if (nwt)
                 {
                     Console.WriteLine("Network: {0} Trained Succesfully", NetworkType);

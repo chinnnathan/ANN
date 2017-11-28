@@ -4,32 +4,40 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ANNGUI"
-        xmlns:MaterialCards="clr-namespace:Wpf.CartesianChart.MaterialCards" x:Class="ANNGUI.MainWindow"
+        xmlns:MaterialCards="clr-namespace:Wpf.CartesianChart.MaterialCards" xmlns:ScatterPlot="clr-namespace:Wpf.CartesianChart.ScatterPlot" x:Class="ANNGUI.MainWindow"
         mc:Ignorable="d"
-        Title="MainWindow" Height="494.051" Width="689.198">
+        Title="MainWindow" Height="699.238" Width="929.874">
     <Grid>
-        <TabControl x:Name="tabControl" HorizontalAlignment="Left" Height="463" VerticalAlignment="Top" Width="681">
+        <TabControl x:Name="tabControl" HorizontalAlignment="Left" Height="648" VerticalAlignment="Top" Width="881" Margin="21,0,0,0">
             <TabItem Header="Home">
-                <Grid Background="#FFE5E5E5" Margin="0,-3,-1,0">
-                    <Button x:Name="TrainNetworkBtn" Content="Train Network" HorizontalAlignment="Left" Height="33" Margin="548,19,0,0" VerticalAlignment="Top" Width="108" Opacity="0.995" Background="{DynamicResource {x:Static SystemColors.MenuHighlightBrushKey}}" BorderBrush="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" Foreground="#FFF9F7F7" BorderThickness="1" FontSize="16" Click="TrainNetworkBtn_Click">
-                    </Button>
-                    <RichTextBox x:Name="OutputText" HorizontalAlignment="Left" Height="218" Margin="10,210,0,0" VerticalAlignment="Top" Width="656" Background="#FF0F0F0F" Foreground="#FF39F91B" AutomationProperties.Name="OutputText" FontFamily="Courier New"/>
-                    <DataGrid x:Name="variableSet" HorizontalAlignment="Left" Height="184" Margin="10,9,0,0" VerticalAlignment="Top" Width="514" LostFocus="variableSet_LostFocus">
+                <Grid Background="#FFE5E5E5" Margin="0,0,-170.667,-173">
+                    <Button x:Name="TrainNetworkBtn" Content="Train Network" HorizontalAlignment="Left" Height="33" Margin="759,10,0,0" VerticalAlignment="Top" Width="108" Opacity="0.995" Background="{DynamicResource {x:Static SystemColors.MenuHighlightBrushKey}}" BorderBrush="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" Foreground="#FFF9F7F7" BorderThickness="1" FontSize="16" Click="TrainNetworkBtn_Click"/>
+                    <RichTextBox x:Name="OutputText" HorizontalAlignment="Left" Height="235" Margin="10,386,0,0" VerticalAlignment="Top" Width="857" Background="#FF0F0F0F" Foreground="#FF39F91B" AutomationProperties.Name="OutputText" FontFamily="Courier New"/>
+                    <DataGrid x:Name="variableSet" HorizontalAlignment="Left" Height="197" Margin="10,9,0,0" VerticalAlignment="Top" Width="732" CellEditEnding="variableSet_CellEditEnding">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Variable" Binding="{Binding Name}" Width="*"/>
                             <DataGridTemplateColumn Header="Value" Width="*">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBox Text="{Binding Value}" GotFocus="TextBox_GotFocus" LostFocus="TextBox_LostFocus"/>
+                                        <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" LostFocus="TextBox_LostFocus"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
+                    <Button x:Name="GraphNetworkBtn" Content="Graph Network" HorizontalAlignment="Left" Height="33" Margin="759,69,0,0" VerticalAlignment="Top" Width="108" Opacity="0.995" Background="{DynamicResource {x:Static SystemColors.MenuHighlightBrushKey}}" BorderBrush="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" Foreground="#FFF9F7F7" BorderThickness="1" FontSize="16" Click="GraphNetworkBtn_Click"/>
+                    <Button x:Name="Reset" Content="Reset" HorizontalAlignment="Left" Height="34" Margin="760,122,0,0" VerticalAlignment="Top" Width="107" AutomationProperties.Name="Reset" Background="#FFFB0505" Foreground="White" FontSize="18" Click="Reset_Click"/>
                 </Grid>
             </TabItem>
             <TabItem Header="Live Output" x:Name="Graphics">
                 <MaterialCards:MaterialCards/>
+            </TabItem>
+            <TabItem Header="Weights" HorizontalAlignment="Left" Height="20" x:Name="DotPlot" Content="{Binding Mode=OneWay}">
+                <TabItem.DataContext>
+                    <ScatterPlot:ScatterExample>
+                        <ScatterPlot:ScatterExample/>
+                    </ScatterPlot:ScatterExample>
+                </TabItem.DataContext>
             </TabItem>
         </TabControl>
 

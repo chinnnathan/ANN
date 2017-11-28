@@ -1,27 +1,26 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using System.IO;
-
 using ANN.ANNTemplates;
 using ANN.Utils;
+using System.Diagnostics;
 
 namespace ANN.Networks
 {
-    class SOM : Network
+    public class SOM : Network
     {
-        private ActivationFunctions.Del2 _output = ActivationFunctions.Distance;
-        new public ActivationFunctions.Del2 Output { get { return _output; } set { _output = value; } }
+        //private ActivationFunctions.Del1 _output = ActivationFunctions.SoftMax;
 
-        public int Diameter = 2;
-        public int MapDimensions = 2;
+        public int Radius { get; set; }
 
         public SOM() { }
 
-        public SOM(int outputnodes, int hiddenlayers=0)
+        public SOM(int outputnodes, int hiddenlayers = 0)
         {
+            _output = ActivationFunctions.Chicago;
             Layer input = new Layer()
             {
                 Index = 0,
@@ -36,10 +35,11 @@ namespace ANN.Networks
             };
             Add(input);
 
-            for(int i=0; i<hiddenlayers; i++)
+            for (int i = 0; i < hiddenlayers; i++)
             {
                 Add(new Layer()
-                {   Index = i + 1,
+                {
+                    Index = i + 1,
                     Label = string.Format("HiddenLayer_{0}", i),
                     Type = LayerType.Hidden,
                 });
@@ -47,17 +47,18 @@ namespace ANN.Networks
             Add(output);
         }
 
+        static Random rnd = new Random();
+
         new public bool Run()
         {
-            Console.WriteLine("[{0}] Run  -> Testing Data Sets: {1} Classes:{2}", DateTime.Now, Correct.Count, Classes);
             double acc = 0;
-            for (int index = 0; index < Correct.Count; index++)
-            {
-                Parallel.For(0, this[this.Count - 1].Count, i =>
-                {
-                    this[this.Count - 1][i].Expected = (Correct[index][i] == (i + 1)) ? _correctTrain : _incorrectTrain;
-                });
 
+            bool allfinish = true;
+
+            for (int index = 0; index < Inputs.Count; index++)
+            //int index = rnd.Next(Count);
+            //int index = 5;
+            {
                 Parallel.ForEach(this.Where(x => x.Type == LayerType.Input), layer =>
                 {
                     Parallel.For(0, layer.Count, i =>
@@ -72,90 +73,103 @@ namespace ANN.Networks
                 foreach (var layer in this.Where(x => x.Index != this.Count))
                 {
                     layer.FeedForward();
-                    acc = GetOutputAccuracy();
+                    //acc = GetOutputAccuracy();
                 }
-                Console.Write("\r[{0}] - Accuracy: {1:N4}% Correct: {2} Over: {3} Under:{4} Classified:{5}", DateTime.Now, acc, _correct, _overPredict, _underPredict, _classified);
-            }
-            Console.WriteLine("\n[{0}] Finish Run -> Testing Data Sets: {1} Classes:{2}", DateTime.Now, Correct.Count, Classes);
 
-            return true;
-        }
+                /*Parallel.ForEach(this[Count - 1], 
+                  n =>
+                  {
+                      n.Predictions = new double[] { n.InterIn[0].Weight, n.InterIn[1].Weight };
+                  });//*/
 
-        private bool RunBackprop(int index)
-        {
-            
-            Parallel.For(0, this[this.Count - 1].Count, i =>
-            {
-                this[this.Count - 1][i].Expected = (Correct[index][i] == (i + 1)) ? _correctTrain : _incorrectTrain;
-            });
-
-            Parallel.ForEach(this.Where(x=>x.Type == LayerType.Input), layer =>
-            {
-                Parallel.For(0, layer.Count, i =>
-                {
-                    layer[i].InterIn[0].IValue = Inputs[index][i];
-                    layer[i].InterIn[0].DValue = Inputs[index][i];
-                    layer[i].InterIn[0].FValue = Inputs[index][i];
-                    layer[i].Input = Inputs[index][i];
-                });
-            });
-
-            foreach (var layer in this.Where(x => x.Index != this.Count))
-            {
-                layer.FeedForward();
-            }
-
-            foreach (var layer in this.Select(x=>x).Reverse())
-            {
-                layer.BackPropagate();
-            }
-            
-            return true;
-        }
-
-        new public bool Train(bool debug=true)
-        {
-            Console.WriteLine("[{0}] Starting Training -> Epochs: {1} Training Data Sets: {2} Classes:{3}", DateTime.Now, Epochs, Correct.Count, Classes);
-            double acc = 0;
-            if (!debug) // want to minimize the amount of operations per iteration
-            {
-                for (int epoch = 0; epoch < Epochs; epoch++)
-                {
-                    for (int datasetlabel = 0; datasetlabel < Correct.Count; datasetlabel++)
+                double[] ul = new double[Classes];
+                Parallel.For(0, Classes, 
+                    i =>
                     {
-                        RunBackprop(datasetlabel);
-                        UpdateAllWeights();
-                    }
-                    Console.Write("\r[{0}] Epoch {1} - Accuracy: {2:N4}% Correct: {3} Over: {4} Under:{5} Classified:{6}", DateTime.Now, epoch + 1,
-                                GetOutputAccuracy(), _correct, _overPredict, _underPredict, _classified);
-                }
+                        ul[i] = ActivationFunctions.Chicago(Inputs[i].ToArray(), this[Count-1][i].InterIn.Select(x=>x.Weight).ToArray());
+                    });
+
+
+                /*allfinish = allfinish & Update(this[this.Count-1].Select(x=> 
+                    ActivationFunctions.Chicago(
+                        x.InterIn.Select(y=>y.IValue).ToArray(),
+                        x.InterIn.Select(y => y.Weight).ToArray())).ToList(), 
+                    Inputs[index]);//*/
+                //allfinish = allfinish & Update(this[this.Count - 1].Select(x => x.Prediction).ToList(), Inputs[index], index);
+                allfinish = allfinish & Update(ul.ToList(), Inputs[index], index);
+            }
+
+            return allfinish;
+        }
+
+        public void GetGraph(int index)
+        {
+            if (Graph.All(x => x.Count == Classes) && Graph.Count > 0)
+            {
+                Graph[0][index] = new Tuple<double, double>(Inputs[index][0], Inputs[index][1]);
+                var output = this[1][index];
+                Graph[1][index] = new Tuple<double, double>(output.InterIn[0].Weight, output.InterIn[1].Weight);
             }
             else
             {
-                using (var sw = new StreamWriter("outputs_SOM_.csv".AppendTimeStamp()))
+                var gr = new Tuple<double, double>[Classes];
+                Parallel.For(0, Inputs.Count, i =>
                 {
-                    sw.WriteLine(",Errors_{0},Accuracy,Correct,Classification,OverPrediction,", string.Join(",Errors_", Enumerable.Range(1, Correct.Count()).ToArray()));
-                    for (int epoch = 0; epoch < Epochs; epoch++)
-                    { 
-                        sw.Write("{0},", epoch);
-                        for (int datasetlabel = 0; datasetlabel < Correct.Count; datasetlabel++)
-                        {
-                            RunBackprop(datasetlabel);
-                            acc = GetOutputAccuracy();
-                            UpdateAllWeights();
-                            sw.Write("{0},", Errors.Last());
+                    gr[i] = new Tuple<double, double>(Inputs[i][0], Inputs[i][1]);
+                });
+                Graph.Add(gr.ToList());
 
-                         }
-                        sw.WriteLine("{0},{1},{2},{3},", acc, _correct, _classified, _overPredict);
-                            Console.Write("\r[{0}] Epoch {1} - Accuracy: {2:N4}% Correct: {3} Over: {4} Under:{5} Classified:{6}", DateTime.Now, epoch + 1,
-                                acc, _correct, _overPredict, _underPredict, _classified);
-                    }
-                }
+                gr = new Tuple<double, double>[Classes];
+                var outputs = this.Where(l => l.Type == LayerType.Output).SelectMany(x => x).ToList();
+                Parallel.ForEach(outputs, output =>
+                {
+                    int i = outputs.IndexOf(output);
+                    gr[i] = new Tuple<double, double>(output.InterIn[0].Weight, output.InterIn[1].Weight);
+                });
+                Graph.Add(gr.ToList());
             }
-            Console.WriteLine("\nTraining Finished");
+        }
+
+        public bool Train(bool debug)
+        {
+            Finished = false;
+            bool stop;
+            Console.WriteLine("\r[{0}] - Start", DateTime.Now);
+            do
+            {
+                stop = Run();
+            } while (!stop);
+            Finished = true;
             return true;
         }
 
+        private double _min = 6E17;
+        public bool Update(List<double> list, List<double> input, int ineur)
+        {
+            var sl = new List<double>(list);
+            sl.Sort();
+            double min = sl.Where(x => x >= 0.05).Min();
+            if (min < _min) _min = min;
 
+            if (min <= 0.5)
+            {
+                Console.WriteLine("\r[{0}] - Zero Value Found", DateTime.Now);
+                return true;
+            }
+            int index = list.IndexOf(min);
+            input = Inputs[index];
+
+            var neuron = this[Count - 1][ineur];
+            neuron.Update = min;
+            double lr = neuron.LearningRate;
+
+            Parallel.For(0, neuron.InterIn.Count, i =>
+            {
+                neuron.InterIn[i].Weight += lr * (input[i] - neuron.InterIn[i].Weight);
+            });
+
+            GetGraph(ineur);
+            return false;
+        }
     }
 }

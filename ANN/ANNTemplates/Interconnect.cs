@@ -37,4 +37,22 @@ namespace ANN.ANNTemplates
             return layerOutputs;
         }
     }
+
+    public struct DynamicInterconnect
+    {
+        public double Update { get; set; }
+        public List<double> ForwardPass { get; set; }
+        public List<double> BackwardPass { get; set; }    
+    }
+
+    public struct NeuronInternal
+    {
+        public double[] Update { get; set; }
+        public int Index { get; set; }
+        public double SidePass { get; set; }
+        public double ForwardPass { get; set; }
+        public double BackwardPass { get; set; }
+        public List<double> MetaData { get; set; }
+        public List<double> Weights { get; set; }
+    }
 }

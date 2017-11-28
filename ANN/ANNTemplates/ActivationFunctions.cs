@@ -52,6 +52,21 @@ namespace ANN.ANNTemplates
             return target - actual;
         }
 
+        public static double Chicago(double input)
+        {
+            return Math.Pow(input, 2);
+        }
+
+        public static double Chicago(double[] input, double[] output)
+        {
+            return Math.Sqrt(input.Zip(output, (a, b) => (a - b) * (a - b)).Sum());
+        }
+
+        public static double Chicago(double input, double[] other)
+        {
+            return Math.Pow(input, 2);
+        }
+
         public static double SoftMax(double input, double[] other)
         {
             double retval = 0;

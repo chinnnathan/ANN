@@ -15,6 +15,7 @@ using System.Windows.Shapes;
 using Wpf.CartesianChart.MaterialCards;
 using ANN;
 using ANN.Utils;
+using Wpf.CartesianChart.ScatterPlot;
 
 namespace ANNGUI
 {
@@ -23,17 +24,19 @@ namespace ANNGUI
     /// </summary>
     public partial class MainWindow : Window
     {
+        private object _lock = new object();
 
         ANN.ANN ann = new ANN.ANN();
-
         private List<string> args = new List<string>();
+
+        internal static MainWindow main;
+        internal List<List<Tuple<double,double>>> GetWeights { get { return ann.Graph; } }
+        internal int GetClasses { get { return ann.Classes; } }
 
         public MainWindow()
         {
+            main = this;
             InitializeComponent();
-            OutputAddLine("Working");
-            OutputAddLine("Even for multiple values");
-            OutputAddLine("This is fantastic");
 
             foreach (var arg in ann.GetVariableNames())
             {
@@ -44,8 +47,7 @@ namespace ANNGUI
 
         private void TrainNetworkBtn_Click(object sender, RoutedEventArgs e)
         {
-            string[] arg = new string[] { "-Epochs", "10" };
-            ann.RunProgram(arg);
+            ann.RunProgram(args.ToArray());
         }
 
         private void OutputAddLine(string text)
@@ -55,38 +57,89 @@ namespace ANNGUI
             OutputText.ScrollToEnd();
         }
 
-        private string _lastVal = "";
-        private bool _update = false;
+        private void variableSet_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        {
+            var cd = ((DataGrid)sender).CurrentCell;
+        }
 
         private void TextBox_LostFocus(object sender, RoutedEventArgs e)
         {
-            string val = ((TextBox)sender).Text;
-            if (val != _lastVal)
-            {
-                _update = true;
-                _lastVal = val;
-            }
+            var cd = ((TextBox)sender);
         }
 
-        private void TextBox_GotFocus(object sender, RoutedEventArgs e)
+        private bool _bail = false;
+        private bool _running = false;
+
+        private async Task UpdateMap()
         {
-            _lastVal = ((TextBox)sender).Text;
-            _update = false;
+            do
+            {
+                ScatterExample.scatter.Series = ann.Graph;
+                ScatterExample.scatter.GraphNewData();
+                await Task.Delay(50);
+            } while (!ann.Finished);
         }
 
-        private void variableSet_LostFocus(object sender, RoutedEventArgs e)
+        private async Task RunNetwork()
         {
-            if (_update)
+            OutputAddLine("Running Network Now");
+            await Task.Run(() => ann.RunProgram(args.ToArray()));
+        }
+
+        private async void GraphNetworkBtn_Click(object sender, RoutedEventArgs e)
+        {
+            //Run 1000? epochs, graph 100 at a time
+            tabControl.SelectedIndex = 2;
+            int radius = 5;
+            int epochs = 0;
+            int epi = 500;
+            ann = new ANN.ANN();
+            args.AddRange(new List<string>() { "Epochs", epi.ToString(), "NewNetwork", "false", "Radius", radius.ToString() });
+            OutputAddLine(string.Format("[{0}] Start", DateTime.Now));
+            /*do
             {
-                var cd = ((DataGrid)sender).Items;
-                foreach (LVData item in cd)
-                {
-                    args.Add(item.Name);
-                    args.Add(string.Format("{0}", item.Value));
-                }
-                _update = false;
+                _running = true;
+                await Task.WhenAll(
+                    Task.Run(()=>ann.RunProgram(args.ToArray())),
+                    Task.Run(() => _running = false)
+                    );
+                //await Task.Run(() => ann.RunProgram(args.ToArray()));
+
+                ScatterExample.scatter.Series = GetWeights;
+                ScatterExample.scatter.GraphNewData();
+
+                if (radius > 0)
+                    radius--;
+                args.RemoveAt(args.Count - 1);
+                args.Add(radius.ToString());
+                epochs += epi;
+            } while (!ann.Finished && !_bail);*/
+
+            //await Task.Run(() => ann.RunProgram(args.ToArray()));
+
+            var tasks = new List<Task>();
+            tasks.Add(RunNetwork());
+            tasks.Add(UpdateMap());
+            await Task.WhenAll(tasks);
+
+            if (_bail)
+            {
+                OutputAddLine(string.Format("BAILED", DateTime.Now, epochs));
+                OutputAddLine(string.Format("[{0}] Epochs: {1}", DateTime.Now, epochs));
             }
-            
+            else
+                OutputAddLine(string.Format("[{0}] Epochs: {1}", DateTime.Now, epochs));
+        }
+
+        private void Reset_Click(object sender, RoutedEventArgs e)
+        {
+            _bail = true;
+            while (_running)
+            {
+                Task.Delay(10);
+            }
+            _bail = false;
+            ann = new ANN.ANN();
         }
     }
 

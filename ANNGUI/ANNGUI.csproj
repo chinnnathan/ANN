@@ -90,6 +90,9 @@
       <DependentUpon>VariableSet.xaml</DependentUpon>
     </Compile>
     <Compile Include="Utils\ActiveChart.cs" />
+    <Compile Include="Utils\DotPlot.xaml.cs">
+      <DependentUpon>DotPlot.xaml</DependentUpon>
+    </Compile>
     <Page Include="UserIO\Graphics.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -107,6 +110,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Page Include="UserIO\VariableSet.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Utils\DotPlot.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
