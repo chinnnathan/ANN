@@ -49,15 +49,11 @@ namespace ANN.Networks
 
         static Random rnd = new Random();
 
-        new public bool Run()
+
+        private void RunLocalMinimum()
         {
-            double acc = 0;
-
-            bool allfinish = true;
-
+            List<double[]> fullupdate = new List<double[]>();
             for (int index = 0; index < Inputs.Count; index++)
-            //int index = rnd.Next(Count);
-            //int index = 5;
             {
                 Parallel.ForEach(this.Where(x => x.Type == LayerType.Input), layer =>
                 {
@@ -72,32 +68,116 @@ namespace ANN.Networks
 
                 foreach (var layer in this.Where(x => x.Index != this.Count))
                 {
-                    layer.FeedForward();
-                    //acc = GetOutputAccuracy();
+                    layer.RunMap();
                 }
 
-                /*Parallel.ForEach(this[Count - 1], 
-                  n =>
-                  {
-                      n.Predictions = new double[] { n.InterIn[0].Weight, n.InterIn[1].Weight };
-                  });//*/
+                double[] ul = new double[Classes];
+                Parallel.For(0, Classes,
+                    i =>
+                    {
+                        ul[i] = this[Count - 1][i].Prediction;
+                    });
+                fullupdate.Add(ul);
+            }
+
+            List<double[]> upavail = new List<double[]>();
+            foreach (var u in fullupdate)
+            {
+                foreach (int i in _ifound.Where(x => x >= 0 && x < Count))
+                    u.ToList().Remove(i);
+                upavail.Add(u);
+            }
+
+            //List<double> all = fullupdate.SelectMany(x => x.Select(y => y)).Where(x => x > _foundval).ToList();
+            List<double> all = upavail.SelectMany(x => x.Select(y => y)).Where(x => x > _foundval).ToList();
+            all.Sort();
+            int minindex = 0;
+            double fullmin = all.Min();
+            for (int j = 0; j < all.Count; j++)
+            {
+                fullmin = all[j];
+                for (int i = 0; i < fullupdate.Count; i++)
+                {
+                    if (fullupdate[i].Any(x => x == fullmin))
+                    {
+                        minindex = i;
+                        //int ineur = fullupdate[i].ToList().IndexOf(fullmin);
+                        if (_ifound.Any(x => x == minindex))
+                            break;
+                        else if (Update(fullupdate[minindex].ToList(), Inputs[minindex], minindex))
+                            return;
+                    }
+                }
+            }
+        }
+
+
+        private void RunGlobalMinimum()
+        {
+            List<double[]> fullupdate = new List<double[]>();
+            for (int index = 0; index < Inputs.Count; index++)
+            {
+                Parallel.ForEach(this.Where(x => x.Type == LayerType.Input), layer =>
+                {
+                    Parallel.For(0, layer.Count, i =>
+                    {
+                        layer[i].InterIn[0].IValue = Inputs[index][i];
+                        layer[i].InterIn[0].DValue = Inputs[index][i];
+                        layer[i].InterIn[0].FValue = Inputs[index][i];
+                        layer[i].Input = Inputs[index][i];
+                    });
+                });
+
+                foreach (var layer in this.Where(x => x.Index != this.Count))
+                {
+                    layer.RunMap();
+                }
 
                 double[] ul = new double[Classes];
                 Parallel.For(0, Classes, 
                     i =>
                     {
-                        ul[i] = ActivationFunctions.Chicago(Inputs[i].ToArray(), this[Count-1][i].InterIn.Select(x=>x.Weight).ToArray());
+                        ul[i] = this[Count-1][i].Prediction;
                     });
-
-
-                /*allfinish = allfinish & Update(this[this.Count-1].Select(x=> 
-                    ActivationFunctions.Chicago(
-                        x.InterIn.Select(y=>y.IValue).ToArray(),
-                        x.InterIn.Select(y => y.Weight).ToArray())).ToList(), 
-                    Inputs[index]);//*/
-                //allfinish = allfinish & Update(this[this.Count - 1].Select(x => x.Prediction).ToList(), Inputs[index], index);
-                allfinish = allfinish & Update(ul.ToList(), Inputs[index], index);
+                fullupdate.Add(ul);
             }
+
+            List<double> sum = fullupdate.Select(x => x.Sum()).ToList();
+            List<double> ssm = new List<double>(sum);
+            ssm.Sort();
+            int yi, xi;
+            for (int i = 0; i < ssm.Count; i++) 
+            {
+                yi = sum.IndexOf(ssm[i]); // output nodes result
+                List<double> update = fullupdate[yi].ToList();
+                if (update.Min() > _foundval)
+                {
+                    xi = update.IndexOf(update.Min()); // input nodes result
+                    if (!_ifound.Any(x => x == xi))
+                    {
+                        if (Update(update, Inputs[yi], xi))
+                            break;
+                    }
+                }
+                else
+                {
+                    xi = update.IndexOf(update.Min()); // input nodes result
+                    if (!_ifound.Any(x => x == xi))
+                        _ifound[yi] = xi;
+                }
+            }
+        }
+
+        new public bool Run()
+        {
+            double acc = 0;
+
+            bool allfinish = true;
+
+            //RunLocalMinimum();
+            RunGlobalMinimum();
+
+            allfinish = _ifound.All(x => x > 0); //init at negative values
 
             return allfinish;
         }
@@ -132,12 +212,17 @@ namespace ANN.Networks
 
         private double _min = 6E17;
         private double[] _mins;
+        private int[] _ifound;
 
         public bool Train(bool debug)
         {
             _mins = new double[Classes];
+            _ifound = new int[Classes];
             for (int i = 0; i < Classes; i++)
+            {
                 _mins[i] = _min;
+                _ifound[i] = -1;
+            }
 
             Finished = false;
             bool stop;
@@ -150,11 +235,12 @@ namespace ANN.Networks
             return true;
         }
 
+        private double _foundval = 1;
         public bool Update(List<double> list, List<double> input, int ineur)
         {
+
             var sl = new List<double>(list);
             sl.Sort();
-            double foundval = 0.05;
             double min = 0;
             int index = 0;
 
@@ -162,8 +248,15 @@ namespace ANN.Networks
             {
                 min = sl[i];
                 index = list.IndexOf(min);
+                if(min <= _foundval)
+                {
+                    if (_ifound.Any(x => x == ineur))
+                        continue;
+                    else
+                        _ifound[ineur] = index;
+                }
 
-                if (_mins[index] > foundval)
+                else if (_mins[index] > min)
                 {
                     _mins[index] = min;
                     break;
@@ -172,13 +265,12 @@ namespace ANN.Networks
 
             if (min < _min) _min = min;
 
-            if (min <= foundval)
+            if (min <= _foundval)
             {
+                _ifound[ineur] = index;
                 Console.WriteLine("\r[{0}] - Zero Value Found", DateTime.Now);
-                return true;
+                return false;
             }
-            input = Inputs[index];
-
 
             var neuron = this[Count - 1][ineur];
             neuron.Update = min;
@@ -190,7 +282,43 @@ namespace ANN.Networks
             });
 
             GetGraph(ineur);
-            return false;
+            return true;
+        }
+
+        public bool Update(List<double> list, List<double> input, int ineur, int ix)
+        {
+            if (_ifound.Any(x => x == ineur))
+                return false;
+
+            double foundval = 1;
+            double min = list.Min();
+
+            if (_mins[ix] > min)
+            {
+                _mins[ix] = min;
+            }
+
+            if (min < _min) _min = min;
+
+            if (min <= foundval)
+            {
+                _ifound[ix] = ineur;
+                Console.WriteLine("\r[{0}] - Zero Value Found", DateTime.Now);
+                return true;
+            }
+
+            input = Inputs[ix];
+            var neuron = this[Count - 1][ineur];
+
+            double lr = neuron.LearningRate;
+
+            Parallel.For(0, neuron.InterIn.Count, i =>
+            {
+                neuron.InterIn[i].Weight += lr * (input[i] - neuron.InterIn[i].Weight);
+            });
+
+            GetGraph(ineur);
+            return true;
         }
     }
 }

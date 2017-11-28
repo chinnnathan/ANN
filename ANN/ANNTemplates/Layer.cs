@@ -167,6 +167,60 @@ namespace ANN.ANNTemplates
             }
         }
 
+        public void RunMap()
+        {
+            if (Type == LayerType.Output)
+            {
+                Parallel.For(0, Count, i =>
+                {
+                    this[i].Prediction = this[i].Input;
+                    this[i].Error = this[i].Input;
+                    this[i].Predictions = this[i].InterIn.Select(x => x.Weight).ToArray();
+                });
+            }
+            else
+            {
+                Parallel.ForEach(this, neuron =>
+                {
+                    neuron.Prediction = (double)neuron.RunActivation(neuron.Input);
+                });
+
+                _values = AdvancedMath.ConvertToMatrix(
+                    this.Select(x => x.Prediction).ToArray(),
+                    -1, 1);
+
+                _weights = AdvancedMath.ConvertToMatrix(this.SelectMany(
+                    x => x.InterOut).Select(w => w.Weight).ToArray(),
+                    this[0].InterOut.Count, this.Count);
+
+                //_outputs = AdvancedMath.JMultiplyMatrix(_weights, _values);
+                _outputs = AdvancedMath.JSubtractMatrix(_weights, _values);
+    
+                Parallel.ForEach(this, neuron =>
+                {
+                    Parallel.ForEach(neuron.InterOut, inter =>
+                    {
+                        inter.FValue = neuron.Prediction;
+                        inter.IValue = neuron.Input;
+                    });
+                });
+
+                var ConnectedNeurons = NextLayers.SelectMany(x => x.Select(n => n)).ToList();
+                Parallel.For(0, ConnectedNeurons.Count, i =>
+                {
+                    double o = 0;
+                    for (int j = 0; j < _outputs[i].Count(); j++)
+                        o += ActivationFunctions.Chicago(_outputs[i][j]);
+                    ConnectedNeurons[i].Input = o;//_outputs[i][0];
+                });
+
+                Parallel.For(0, this.Count, i =>
+                {
+                    this[i].Predictions = new double[] { _weights[i, 0], _weights[i, 1] };
+                });
+            }
+        }
+
         public void StandardConnectNeurons(double min, double max)
         {
             try

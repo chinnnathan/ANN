@@ -13,16 +13,18 @@ namespace ANN
     public class ANN
     {
         private string  _networkType = "SOM";
-        private string  _trainingFile = "C:/Users/nathan/Downloads/ntnu-som-master/ntnu-som-master/assets/western_sahara.txt";
-        private string  _testingFile = "C:/Users/nathan/Downloads/ntnu-som-master/ntnu-som-master/assets/western_sahara.txt";
-        private string  _validationFile = "C:/Users/nathan/Downloads/ntnu-som-master/ntnu-som-master/assets/western_sahara.txt";
+        private string  _trainingFile =     "D:/resources/western_sahara.txt";
+        private string  _testingFile =      "D:/resources/western_sahara.txt";
+        private string  _validationFile =   "D:/resources/western_sahara.txt";
         private string  _outputTestingFile = "TestingOutput.csv";
         private string  _outputTrainingFile = "TrainingOutput.csv";
-        private double _learningRate = 0.0001;
+        private double _learningRate = 0.51;
         private int     _hiddenLayers = 0;
         private int     _classes = 29;
         private int     _cluster = 1;
         private int     _radius = 1;
+        private double  _min = -1;
+        private double  _max = 1;
         private int[]   _nodes = new int[] { 38 };
         private int     _epochs = 500;
         private bool    _normalize = false;
@@ -45,6 +47,8 @@ namespace ANN
         public int Cluster { get { return _cluster; } set { _cluster = value; } }
         public int Radius { get { return _radius; } set { _radius = value; } }
         public int Epochs { get { return _epochs; } set { _epochs = value; } }
+        public double Min { get { return _min; } set { _min = value; } }
+        public double Max { get { return _max; } set { _max = value; } }
         public int[] Nodes { get { return _nodes; } set { _nodes = value; } }
         public bool Normalize { get { return _normalize; } set { _normalize = value; } }
         public bool NewNetwork { get { return _newNetwork; } set { _newNetwork = value; } }
@@ -153,7 +157,7 @@ namespace ANN
             _network.SetCorrect(_validationFile, _classes);
 
             if (initneeded)
-                _network.InitializeStd(_nodes, _activation, _gradient);
+                _network.InitializeStd(_nodes, _activation, _gradient, _min, _max);
 
 
             if (_networkDefined)

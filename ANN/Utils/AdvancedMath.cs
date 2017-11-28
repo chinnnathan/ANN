@@ -85,6 +85,26 @@ namespace ANN.Utils
             return c;
         }
 
+        public static double[][] JSubtractMatrix(double[,]a, double[,]b)
+        {
+            double[][] c = new double[a.GetLength(0)][];
+            if (a.GetLength(0) == b.GetLength(0) && a.GetLength(1) == b.GetLength(1))
+                Parallel.For(0, a.GetLength(0), ai =>
+                {
+                    c[ai] = new double[a.GetLength(1)];
+                    for (int i = 0; i < a.GetLength(1); i++)
+                        c[ai][i] = a[ai, i] - b[ai, i];
+                });
+            else if (a.GetLength(1) == b.GetLength(0))
+                Parallel.For(0, a.GetLength(0), ai =>
+                {
+                    c[ai] = new double[a.GetLength(1)];
+                    for (int i = 0; i < a.GetLength(1); i++)
+                        c[ai][i] = a[ai, i] - b[i, 0];
+                });
+            return c;
+        }
+
         private static readonly Random random = new Random();
         public static double GetRandomRange(double min, double max)
         {

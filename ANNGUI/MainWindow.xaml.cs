@@ -93,8 +93,10 @@ namespace ANNGUI
             int radius = 5;
             int epochs = 0;
             int epi = 500;
+            double min = 10000;
+            double max = 30000;
             ann = new ANN.ANN();
-            args.AddRange(new List<string>() { "Epochs", epi.ToString(), "NewNetwork", "false", "Radius", radius.ToString() });
+            args.AddRange(new List<string>() { "Epochs", epi.ToString(), "NewNetwork", "false", "Min", min.ToString(), "Max", max.ToString(), "Radius", radius.ToString() });
             OutputAddLine(string.Format("[{0}] Start", DateTime.Now));
             /*do
             {
