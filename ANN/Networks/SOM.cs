@@ -130,8 +130,15 @@ namespace ANN.Networks
             }
         }
 
+        private double _min = 6E17;
+        private double[] _mins;
+
         public bool Train(bool debug)
         {
+            _mins = new double[Classes];
+            for (int i = 0; i < Classes; i++)
+                _mins[i] = _min;
+
             Finished = false;
             bool stop;
             Console.WriteLine("\r[{0}] - Start", DateTime.Now);
@@ -143,21 +150,35 @@ namespace ANN.Networks
             return true;
         }
 
-        private double _min = 6E17;
         public bool Update(List<double> list, List<double> input, int ineur)
         {
             var sl = new List<double>(list);
             sl.Sort();
-            double min = sl.Where(x => x >= 0.05).Min();
+            double foundval = 0.05;
+            double min = 0;
+            int index = 0;
+
+            for (int i = 0; i < Classes; i++)
+            {
+                min = sl[i];
+                index = list.IndexOf(min);
+
+                if (_mins[index] > foundval)
+                {
+                    _mins[index] = min;
+                    break;
+                }
+            }
+
             if (min < _min) _min = min;
 
-            if (min <= 0.5)
+            if (min <= foundval)
             {
                 Console.WriteLine("\r[{0}] - Zero Value Found", DateTime.Now);
                 return true;
             }
-            int index = list.IndexOf(min);
             input = Inputs[index];
+
 
             var neuron = this[Count - 1][ineur];
             neuron.Update = min;
