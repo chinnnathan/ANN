@@ -13,12 +13,12 @@ namespace ANN
     public class ANN
     {
         private string  _networkType = "SOM";
-        private string  _trainingFile =     "D:/resources/western_sahara.txt";
-        private string  _testingFile =      "D:/resources/western_sahara.txt";
-        private string  _validationFile =   "D:/resources/western_sahara.txt";
+        private string  _trainingFile = "C:/Users/nathan/Downloads/ntnu-som-master/ntnu-som-master/assets/western_sahara.txt";
+        private string  _testingFile = "C:/Users/nathan/Downloads/ntnu-som-master/ntnu-som-master/assets/western_sahara.txt";
+        private string  _validationFile = "C:/Users/nathan/Downloads/ntnu-som-master/ntnu-som-master/assets/western_sahara.txt";
         private string  _outputTestingFile = "TestingOutput.csv";
         private string  _outputTrainingFile = "TrainingOutput.csv";
-        private double _learningRate = 0.51;
+        private double _learningRate = 0.1;
         private int     _hiddenLayers = 0;
         private int     _classes = 29;
         private int     _cluster = 1;
