@@ -174,11 +174,12 @@ namespace ANN.Networks
 
         private void RunGlobalError()
         {
-            List<double> Errors = new List<double>();
-            List<double[]> Outputs = new List<double[]>();
-
+            List<int> neurons = new List<int>();
             for (int index = 0; index < Inputs.Count; index++)
             {
+                if (_ifound[index] >= 0)
+                    continue;
+
                 Parallel.ForEach(this.Where(x => x.Type == LayerType.Input), layer =>
                 {
                     Parallel.For(0, layer.Count, i =>
@@ -195,57 +196,54 @@ namespace ANN.Networks
                     layer.RunMap();
                 }
 
-                double error = 0;
-                foreach (var neuron in this[Count - 1])
+                List<double> Errors = new List<double>();
+                for (int i = 0; i < this[Count - 1].Count; i++)
                 {
-                    int ind = this[Count - 1].IndexOf(neuron);
-                    neuron.Prediction = ActivationFunctions.Chicago(neuron.InterIn.Select(x => x.Weight).ToArray(), neuron.InterIn.Select(x => x.IValue).ToArray());
-
-                    if (ind == this[Count - 1].Count - 1)
+                    List<double[]> Outputs = new List<double[]>();
+                    for (int n = 0; n < this[Count - 1].Count; n++)
                     {
-                        neuron.Error = ActivationFunctions.Chicago(
-                            neuron.InterIn.Select(x => x.Weight).ToArray(),
-                            this[Count - 1][0].InterIn.Select(x => x.Weight).ToArray());
+                        var neuron = this[Count - 1][n];
+                        if (n == i)
+                            Outputs.Add(Inputs[index].ToArray());
+                        else
+                            Outputs.Add(neuron.InterIn.Select(x => x.Weight).ToArray());
                     }
-                    else
-                    {
-                        neuron.Error = ActivationFunctions.Chicago(
-                            neuron.InterIn.Select(x => x.Weight).ToArray(),
-                            this[Count - 1][ind + 1].InterIn.Select(x => x.Weight).ToArray());
-                    }
-                    error += neuron.Error;
-                }
-                Outputs.Add(this[Count - 1].Select(x => x.Prediction).ToArray());
-                Errors.Add(error);
-            }
 
-            List<double> ssm = new List<double>(Errors);
-            ssm.Sort();
-            int yi, xi;
-            for (int i = 0; i < ssm.Count; i++)
-            {
-                yi = Errors.IndexOf(ssm[i]); // output nodes result
-                List<double> update = Outputs[yi].ToList();
-                if (update.Min() > _foundval)
-                {
-                    var supd = new List<double>(update);
-                    supd.Sort();
-                    foreach (var e in supd)
+                    double error = 0;
+                    for (int n = 0; n < this[Count - 1].Count; n++)
                     {
-                        xi = update.IndexOf(e); // input nodes result
-                        if (!_ifound.Any(x => x == xi))
+                        var neuron = this[Count - 1][n];
+                        if (n == this[Count - 1].Count - 1)
                         {
-                            if (Update(update, Inputs[yi], xi))
-                                return;
+                            neuron.Error = ActivationFunctions.Chicago(Outputs[n], Outputs[0]);
                         }
+                        else
+                        {
+                            neuron.Error = ActivationFunctions.Chicago(Outputs[n], Outputs[n + 1]);
+                        }
+                        error += neuron.Error;
+                    }
+                    Errors.Add(error);
+                }
+                List<double> se = new List<double>(Errors);
+                se.Sort();
+                int iin = -1;
+                foreach(var e in se)
+                {
+                    iin = Errors.IndexOf(e);
+                    if (neurons.All(x => x != iin))
+                    {
+                        neurons.Add(iin);
+                        break;
                     }
                 }
+
+                Update(Inputs[index], iin);
+                //Update(Inputs[index], iin);
+                /*if (_ifound.Any(x => x == iin))
+                    continue;
                 else
-                {
-                    xi = update.IndexOf(update.Min()); // input nodes result
-                    if (!_ifound.Any(x => x == xi))
-                        _ifound[yi] = xi;
-                }
+                    Update(Inputs[index], iin);*/
             }
         }
 
@@ -256,8 +254,8 @@ namespace ANN.Networks
             bool allfinish = true;
 
             //RunLocalMinimum();
-            RunGlobalMinimum();
-            //RunGlobalError();
+            //RunGlobalMinimum();
+            RunGlobalError();
 
             allfinish = _ifound.All(x => x >= 0); //init at negative values
 
@@ -298,15 +296,6 @@ namespace ANN.Networks
 
         public bool Train(bool debug)
         {
-            /*var inp = Inputs[rnd.Next(Classes)];
-            var ix = inp[0];
-            var iy = inp[1];
-            Parallel.ForEach(this[Count-1], neuron =>
-            {
-                neuron.InterIn[0].Weight = ix;
-                neuron.InterIn[1].Weight = iy;
-            });*/
-
             _mins = new double[Classes];
             _ifound = new int[Classes];
             for (int i = 0; i < Classes; i++)
@@ -323,10 +312,13 @@ namespace ANN.Networks
             do
             {
                 Epochs++;
-                if (_ifound.Where(x => x != -1).Count() > correct && Radius > 0)
+                if (_ifound.Where(x => x != -1).Count() > correct)
+                {
+                    correct++;
+                }
+                if (Radius > 0)
                 {
                     Radius--;
-                    correct++;
                 }
                 stop = Run();
             } while (!stop);
@@ -334,7 +326,7 @@ namespace ANN.Networks
             return true;
         }
 
-        private double _foundval = 1;
+        private double _foundval = 100;
         public bool Update(List<double> list, List<double> input, int ineur)
         {
 
@@ -385,11 +377,53 @@ namespace ANN.Networks
                 var neuron = this[Count - 1][newi];
                 
                 neuron.Update = min;
-                double lr = (newi == ineur) ? neuron.LearningRate : neuron.LearningRate * 0.5/Math.Abs(r);
+                double lr = (newi == ineur) ? neuron.LearningRate : neuron.LearningRate * 0.01/Math.Abs(r);
 
                 Parallel.For(0, neuron.InterIn.Count, i =>
                 {
                     neuron.InterIn[i].Weight += lr * (input[i] - neuron.InterIn[i].Weight);
+                });
+
+                GetGraph(newi);
+            }
+            return true;
+        }
+
+        public bool Update(List<double> input, int ineur)
+        {
+            for (int r = -1 * Radius; r <= Radius; r++)
+            {
+                int newi = ineur + r;
+                int inind = Inputs.IndexOf(input);
+
+                if (newi >= this[Count - 1].Count)
+                    newi = newi - this[Count - 1].Count;
+                if (newi < 0)
+                    newi = this[Count - 1].Count + newi;
+
+                if (_ifound.Any(x => x == newi)) //this neuron has been assigned
+                    return false;
+
+                if (_ifound[inind] >= 0) //this input point has a corresponding value
+                    return false;
+
+                var neuron = this[Count - 1][newi];
+                
+                if (neuron.Prediction <= _foundval)
+                {
+                    _ifound[inind] = newi;
+                    return false;
+                }
+                
+                double lr = (newi == ineur) ? neuron.LearningRate : neuron.LearningRate * 0.05/Math.Abs(r);
+
+                Parallel.For(0, neuron.InterIn.Count, i =>
+                {
+                    neuron.InterIn[i].Weight += lr * (input[i] - neuron.InterIn[i].Weight);
+                    /*if (newi == ineur)
+                        neuron.InterIn[i].Weight = input[i];
+                    else
+                        neuron.InterIn[i].Weight += lr * (input[i] - neuron.InterIn[i].Weight);//*/
                 });
 
                 GetGraph(newi);

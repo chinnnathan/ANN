@@ -90,11 +90,11 @@ namespace ANNGUI
         {
             //Run 1000? epochs, graph 100 at a time
             tabControl.SelectedIndex = 2;
-            int radius = 5;
+            int radius = 2;
             int epochs = 0;
             int epi = 500;
-            double min = 24000;
-            double max = 30000;
+            double min = 15000;
+            double max = 24000;
             ann = new ANN.ANN();
             args.AddRange(new List<string>() { "Epochs", epi.ToString(), "NewNetwork", "false", "Min", min.ToString(), "Max", max.ToString(), "Radius", radius.ToString() });
             OutputAddLine(string.Format("[{0}] Start", DateTime.Now));
