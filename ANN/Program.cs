@@ -18,7 +18,7 @@ namespace ANN
         private string  _validationFile = "D:/resources/western_sahara.txt";
         private string  _outputTestingFile = "TestingOutput.csv";
         private string  _outputTrainingFile = "TrainingOutput.csv";
-        private double _learningRate = 0.5;
+        private double _learningRate = 1.1;
         private int     _hiddenLayers = 0;
         private int     _classes = 29;
         private int     _cluster = 1;

@@ -174,7 +174,7 @@ namespace ANN.Networks
 
         private void RunGlobalError()
         {
-            List<int> neurons = new List<int>();
+            var neurons = new List<int>(_ifound.Where(x=>x>=0));
             for (int index = 0; index < Inputs.Count; index++)
             {
                 if (_ifound[index] >= 0)
@@ -221,7 +221,7 @@ namespace ANN.Networks
                         {
                             neuron.Error = ActivationFunctions.Chicago(Outputs[n], Outputs[n + 1]);
                         }
-                        error += neuron.Error;
+                        error += neuron.Error + neuron.Prediction;
                     }
                     Errors.Add(error);
                 }
@@ -237,8 +237,8 @@ namespace ANN.Networks
                         break;
                     }
                 }
-
                 Update(Inputs[index], iin);
+
                 //Update(Inputs[index], iin);
                 /*if (_ifound.Any(x => x == iin))
                     continue;
@@ -297,6 +297,7 @@ namespace ANN.Networks
         public bool Train(bool debug)
         {
             _mins = new double[Classes];
+
             _ifound = new int[Classes];
             for (int i = 0; i < Classes; i++)
             {
@@ -312,21 +313,21 @@ namespace ANN.Networks
             do
             {
                 Epochs++;
+                stop = Run();
+
                 if (_ifound.Where(x => x != -1).Count() > correct)
                 {
                     correct++;
+                    if (Radius > 0)
+                        Radius--;
                 }
-                if (Radius > 0)
-                {
-                    Radius--;
-                }
-                stop = Run();
+
             } while (!stop);
             Finished = true;
             return true;
         }
 
-        private double _foundval = 100;
+        private double _foundval = 10;
         public bool Update(List<double> list, List<double> input, int ineur)
         {
 
@@ -391,6 +392,12 @@ namespace ANN.Networks
 
         public bool Update(List<double> input, int ineur)
         {
+            if (this[Count-1][ineur].Prediction <= _foundval)
+            {
+                _ifound[Inputs.IndexOf(input)] = ineur;
+                return false;
+            }
+
             for (int r = -1 * Radius; r <= Radius; r++)
             {
                 int newi = ineur + r;
@@ -409,13 +416,7 @@ namespace ANN.Networks
 
                 var neuron = this[Count - 1][newi];
                 
-                if (neuron.Prediction <= _foundval)
-                {
-                    _ifound[inind] = newi;
-                    return false;
-                }
-                
-                double lr = (newi == ineur) ? neuron.LearningRate : neuron.LearningRate * 0.05/Math.Abs(r);
+                double lr = (newi == ineur) ? neuron.LearningRate : neuron.LearningRate * 0.005/Math.Abs(r);
 
                 Parallel.For(0, neuron.InterIn.Count, i =>
                 {
