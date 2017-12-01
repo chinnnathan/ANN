@@ -91,38 +91,21 @@ namespace ANNGUI
             //Run 1000? epochs, graph 100 at a time
             tabControl.SelectedIndex = 2;
             int radius = 2;
-            int epochs = 0;
             int epi = 500;
             double min = 15000;
             double max = 24000;
             ann = new ANN.ANN();
             args.AddRange(new List<string>() { "Epochs", epi.ToString(), "NewNetwork", "false", "Min", min.ToString(), "Max", max.ToString(), "Radius", radius.ToString() });
             OutputAddLine(string.Format("[{0}] Start", DateTime.Now));
-            /*do
-            {
-                _running = true;
-                await Task.WhenAll(
-                    Task.Run(()=>ann.RunProgram(args.ToArray())),
-                    Task.Run(() => _running = false)
-                    );
-                //await Task.Run(() => ann.RunProgram(args.ToArray()));
-
-                ScatterExample.scatter.Series = GetWeights;
-                ScatterExample.scatter.GraphNewData();
-
-                if (radius > 0)
-                    radius--;
-                args.RemoveAt(args.Count - 1);
-                args.Add(radius.ToString());
-                epochs += epi;
-            } while (!ann.Finished && !_bail);*/
-
-            //await Task.Run(() => ann.RunProgram(args.ToArray()));
+            
 
             var tasks = new List<Task>();
             tasks.Add(RunNetwork());
             tasks.Add(UpdateMap());
             await Task.WhenAll(tasks);
+
+            double epochs = ann.Epochs;
+            double error = ann.Error;
 
             if (_bail)
             {
@@ -130,7 +113,7 @@ namespace ANNGUI
                 OutputAddLine(string.Format("[{0}] Epochs: {1}", DateTime.Now, epochs));
             }
             else
-                OutputAddLine(string.Format("[{0}] Epochs: {1}", DateTime.Now, epochs));
+                OutputAddLine(string.Format("[{0}] Epochs: {1} Total Error: {2}", DateTime.Now, epochs, error));
         }
 
         private void Reset_Click(object sender, RoutedEventArgs e)

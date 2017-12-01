@@ -13,16 +13,16 @@ namespace ANN
     public class ANN
     {
         private string  _networkType = "SOM";
-        private string  _trainingFile = "D:/resources/western_sahara.txt";
-        private string  _testingFile = "D:/resources/western_sahara.txt";
-        private string  _validationFile = "D:/resources/western_sahara.txt";
+        private string  _trainingFile = "C:/Users/nathan/Downloads/ntnu-som-master/ntnu-som-master/assets/djibouti.txt";
+        private string  _testingFile = "C:/Users/nathan/Downloads/ntnu-som-master/ntnu-som-master/assets/djibouti.txt";
+        private string  _validationFile = "C:/Users/nathan/Downloads/ntnu-som-master/ntnu-som-master/assets/djibouti.txt";
         private string  _outputTestingFile = "TestingOutput.csv";
         private string  _outputTrainingFile = "TrainingOutput.csv";
-        private double _learningRate = 1.1;
+        private double _learningRate = 5.1;
         private int     _hiddenLayers = 0;
-        private int     _classes = 29;
+        private int     _classes = 38;
         private int     _cluster = 1;
-        private int     _radius = 1;
+        private int     _radius = 2;
         private double  _min = 10000;
         private double  _max = 30000;
         private int[]   _nodes = new int[] { 38 };
@@ -56,6 +56,7 @@ namespace ANN
         public bool Run { get { return _run; } set { _run = value; } }
         public bool Debug { get { return _debug; } set { _debug = value; } }
         public bool Finished { get { return _network.Finished; } }
+        public double Error { get { return _network.Error; } }
 
         public List<List<Tuple<double, double>>> Graph { get { return ((Network)_network).Graph; } }
 
@@ -167,6 +168,7 @@ namespace ANN
                 if (nwt)
                 {
                     Console.WriteLine("Network: {0} Trained Succesfully", NetworkType);
+                    Epochs = _network.Epochs;
                 }
                 else
                 {
