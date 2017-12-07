@@ -1,8 +1,13 @@
 ﻿using System;
 using System.IO;
+using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System.ComponentModel;
+using System.Threading.Tasks;
+using System.Text.RegularExpressions;
+using System.Linq;
+using System.Text;
 
 namespace ANN.Utils
 {
@@ -145,6 +150,65 @@ namespace ANN.Utils
             return values;
         }
 
+        private static string[] RemoveIndex(string[] input, int[] IgnoreCol)
+        {
+            var ret = input.ToList();
+            foreach (int index in IgnoreCol)
+            {
+                try
+                {
+                    ret.RemoveAt(index);
+                }
+                catch
+                {
+                    continue;
+                }
+            }
+            return ret.ToArray();
+        }
 
+        static public List<List<double>> ReadFileToDouble(string filename, int cluster, int[] ignoreCol, bool normalize = true)
+        {
+            List<List<double>> inputs = new List<List<double>>();
+            using (var sr = new StreamReader(filename))
+            {
+                while (!sr.EndOfStream)
+                {
+                    List<double> rv = new List<double>();
+                    string pattern = "[ |,a-zA-z]+";
+                    for (int i = 0; i < cluster; i++)
+                    {
+                        string input = sr.ReadLine();
+                        string[] istr = Regex.Split(input, pattern);
+                        istr = RemoveIndex(istr, ignoreCol);
+                        if (istr.Length > 1)
+                        {
+                            rv.AddRange(istr.Select(x => Double.Parse(x)).ToArray());
+
+                        }
+                        else
+                        {
+                            byte[] inb = Encoding.ASCII.GetBytes(input);
+                            rv.AddRange(inb.Select(x => (double)x));
+                        }
+                    }
+                    inputs.Add(rv);
+                }
+            }
+
+            if (normalize)
+            {
+                List<double> distinct = inputs.SelectMany(x => x.Select(y => y).Distinct()).Distinct().ToList();
+                Parallel.ForEach(inputs, input =>
+                {
+                    for (int i = 0; i < input.Count; i++)
+                    {
+                        input[i] = distinct.IndexOf(input[i]) + 0.1; //offset so zeroes don't ruin data
+                    }
+                });
+            }
+            return inputs;
+        }
     }
+
 }

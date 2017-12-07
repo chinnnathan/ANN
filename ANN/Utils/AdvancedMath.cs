@@ -110,7 +110,16 @@ namespace ANN.Utils
         {
             var next = random.NextDouble();
             return min + (next * (max - min));
+        }
 
+        public static double[] GetRandomRanges(int length, double min, double max)
+        {
+            double[] ret = new double[length];
+            for(int i = 0; i < length; i++)
+            {
+                ret[i] = GetRandomRange(min, max);
+            }
+            return ret;
         }
 
         public static double[,] ConvertToMatrix(double[] A, int L, int W)

@@ -74,6 +74,7 @@
     <Compile Include="Networks\SOMDynamic.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Ref\RecurrentNeuralProgram.cs" />
     <Compile Include="Utils\AdvancedMath.cs" />
     <Compile Include="Utils\FileManager.cs" />
     <Compile Include="Utils\OperationCLI.cs" />
