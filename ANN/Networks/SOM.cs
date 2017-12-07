@@ -158,7 +158,8 @@ namespace ANN.Networks
                         xi = update.IndexOf(e); // input nodes result
                         if (!_ifound.Any(x => x == xi))
                         {
-                            if (Update(update, Inputs[yi], xi))
+                            //if (Update(update, Inputs[yi], xi))
+                            if (Update(Inputs[yi], xi))
                                 return;
                         }
                     }
@@ -247,15 +248,49 @@ namespace ANN.Networks
             }
         }
 
-        new public bool Run()
+        private double GetTotalError()
+        {
+            double error = 0;
+            List<double[]> Outputs = new List<double[]>();
+            for (int n = 0; n < this[Count - 1].Count; n++)
+            {
+                Outputs.Add(this[Count-1][n].InterIn.Select(x => x.Weight).ToArray());
+            }
+
+            for (int n = 0; n < this[Count - 1].Count; n++)
+            {
+                var neuron = this[Count - 1][n];
+                if (n == this[Count - 1].Count - 1)
+                {
+                    neuron.Error = ActivationFunctions.Chicago(Outputs[n], Outputs[0]);
+                }
+                else
+                {
+                    neuron.Error = ActivationFunctions.Chicago(Outputs[n], Outputs[n + 1]);
+                }
+                error += neuron.Error + neuron.Prediction;
+            }
+
+            return error;
+        }
+
+        new public bool Run(int mode = 3)
         {
             double acc = 0;
 
             bool allfinish = true;
 
-            //RunLocalMinimum();
-            //RunGlobalMinimum();
-            RunGlobalError();
+            switch(mode)
+            {
+                case 1: RunLocalMinimum();
+                    break;
+                case 2: RunGlobalMinimum();
+                    break;
+                case 3: RunGlobalError();
+                    break;
+                default: RunGlobalError();
+                    break;
+            }
 
             allfinish = _ifound.All(x => x >= 0); //init at negative values
 
@@ -313,17 +348,25 @@ namespace ANN.Networks
             do
             {
                 Epochs++;
-                stop = Run();
+                int mode = (Epochs > 8000) ? 2:3;
+                stop = Run(mode);
 
                 if (_ifound.Where(x => x != -1).Count() > correct)
                 {
                     correct++;
+                    Console.WriteLine("[{0}] Correct: {1} Current Epochs: {2}", DateTime.Now, correct, Epochs);
+                    for (int i = 0; i < _ifound.Length; i++)
+                        Console.WriteLine("{0}: neuron - {1}", i, _ifound[i]);
+
                     if (Radius > 0)
                         Radius--;
+
                 }
 
             } while (!stop);
             Finished = true;
+            _error= GetTotalError();
+            Console.WriteLine("Total Distance Travelled: {0}", _error);
             return true;
         }
 
@@ -416,7 +459,7 @@ namespace ANN.Networks
 
                 var neuron = this[Count - 1][newi];
                 
-                double lr = (newi == ineur) ? neuron.LearningRate : neuron.LearningRate * 0.005/Math.Abs(r);
+                double lr = (newi == ineur) ? neuron.LearningRate : neuron.LearningRate * 0.01/Math.Abs(r);
 
                 Parallel.For(0, neuron.InterIn.Count, i =>
                 {

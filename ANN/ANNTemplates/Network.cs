@@ -15,6 +15,7 @@ namespace ANN.ANNTemplates
         protected double _incorrectTrain = 0.01;
         protected double _correctTrain = 0.99;
         protected double _barrierTrain = 0.5;
+        protected double _error = 0;
         private bool _debug = true;
         private bool _finished = false;
         private List<List<Tuple<double, double>>> _graph = new List<List<Tuple<double, double>>>();
@@ -34,6 +35,7 @@ namespace ANN.ANNTemplates
         public ActivationFunctions.Del Context { get { return _context; } set { value = _context; } }
         public ActivationFunctions.Del1 Output { get { return _output; } set { value = _output; } }
         public ActivationFunctions.Del OutGradient { get { return _outGradient; } set { value = _outGradient; } }
+        public double Error { get { return _error; } set { _error = value; } }
 
         public List<double> Errors = new List<double>();
 
